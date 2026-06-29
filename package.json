@@ -1,0 +1,105 @@
+{
+  "name": "fairpoker-app",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": ".",
+  "engines": {
+    "node": ">=26 <27"
+  },
+  "dependencies": {
+    "@multiavatar/multiavatar": "^1.0.7",
+    "dandelion-mesh": "^1.0.0",
+    "eventemitter3": "^5.0.1",
+    "mental-poker-toolkit": "^1.0.1",
+    "peerjs": "^1.5.4",
+    "phe": "^0.6.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "scripts": {
+    "generate:release-metadata": "node scripts/generate-release-metadata.js",
+    "generate:trust-status": "node scripts/generate-audit-status.js",
+    "generate:ai-index": "node scripts/generate-ai-index.js",
+    "sync:release-evidence": "node scripts/sync-public-release-evidence.js",
+    "validate:release-evidence": "node scripts/validate-release-evidence.js",
+    "audit:release-coverage": "node scripts/audit-release-coverage.js",
+    "audit:status": "node scripts/generate-audit-status.js --scan",
+    "prestart": "npm run generate:release-metadata && npm run generate:trust-status",
+    "start": "react-scripts start",
+    "local:debug": "node ../scripts/local-debug.mjs",
+    "start:coverage": "REACT_APP_COVERAGE=true react-app-rewired start",
+    "prebuild": "npm run generate:release-metadata && npm run sync:release-evidence && npm run generate:ai-index && npm run audit:status",
+    "build": "react-scripts build",
+    "build:repro": "node scripts/generate-release-metadata.js && node scripts/generate-audit-status.js && react-scripts build",
+    "build:ipfs-game": "node scripts/create-ipfs-game-build.js",
+    "postbuild": "node scripts/copy-source-release-to-build.js && npm run validate:release-evidence && SKIP_AUDIT_COPY=1 npm run audit:release-coverage",
+    "release:source": "node scripts/refuse-partial-release.js release:source",
+    "release:source:internal": "npm run generate:release-metadata && node scripts/create-source-release.js && npm run sync:release-evidence",
+    "release:all": "node scripts/publish-canonical-release.js",
+    "release:canonical": "node scripts/publish-canonical-release.js",
+    "release:evidence": "node scripts/refuse-partial-release.js release:evidence",
+    "pretest": "npm run generate:release-metadata && npm run audit:status",
+    "test": "react-scripts test",
+    "release:site": "node scripts/refuse-partial-release.js release:site",
+    "verify:transcript": "node scripts/verify-transcript.js",
+    "e2e": "npx playwright test",
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "overrides": [
+      {
+        "files": [
+          "e2e/**/*.ts"
+        ],
+        "rules": {
+          "testing-library/prefer-screen-queries": "off"
+        }
+      }
+    ]
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!<rootDir>/src/index.tsx",
+      "!<rootDir>/src/setupTests.ts",
+      "!<rootDir>/src/reportWebVitals.ts",
+      "!<rootDir>/src/lib/setup.ts"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@playwright/test": "^1.49.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/gtag.js": "^0.0.20",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.0.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "babel-plugin-istanbul": "^7.0.1",
+    "gh-pages": "^6.1.1",
+    "nyc": "^18.0.0",
+    "react-app-rewired": "^2.2.1",
+    "react-scripts": "^5.0.1",
+    "typescript": "^4.9.5"
+  }
+}

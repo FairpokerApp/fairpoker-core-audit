@@ -1,0 +1,21 @@
+import React, {ImgHTMLAttributes} from 'react';
+
+type AvatarProperties =
+  Pick<ImgHTMLAttributes<HTMLImageElement>,
+    'alt' | 'src' | 'className' | 'title'> & {
+  highlight?: boolean;
+};
+
+export default function Avatar(props: AvatarProperties) {
+  const {
+    alt,
+    highlight,
+    ...otherAttributes
+  } = props;
+
+  return (
+    <div className={highlight ? 'avatar highlight' : 'avatar'}>
+      <img alt={props.alt ?? "Avatar"} {...otherAttributes}/>
+    </div>
+  );
+}

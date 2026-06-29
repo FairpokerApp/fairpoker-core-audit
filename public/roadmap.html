@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="zh" data-lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fair Poker — 已加固内容与已知差距（路线图）</title>
+    <meta name="description" content="Fair Poker honest disclosure: hardening already shipped, and the known fairness and security gaps still on the roadmap." />
+    <meta name="theme-color" content="#07130F" />
+    <style>
+      :root{
+        --fp-bg:#07130F;--fp-card:#0F2418;--fp-emerald:#1FA06A;--fp-emerald-soft:rgba(31,160,106,.14);
+        --fp-gold:#E0C06A;--fp-gold-soft:rgba(224,192,106,.12);--fp-ink:#F2EFE6;--fp-muted:#9BB0A4;
+        --fp-body:#D7E2DB;--fp-line:rgba(159,176,168,.16);--fp-radius:14px;--fp-maxw:980px;
+        --fp-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",system-ui,Arial,sans-serif;
+        --fp-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      }
+      *{box-sizing:border-box}
+      html{color-scheme:dark;scroll-behavior:smooth}
+      body{margin:0;background:var(--fp-bg);color:var(--fp-ink);font-family:var(--fp-sans);line-height:1.72;-webkit-font-smoothing:antialiased}
+      a{color:var(--fp-gold);text-decoration:none;font-weight:600}
+      a:hover{text-decoration:underline}
+      .fp-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px clamp(16px,5vw,40px);background:rgba(7,19,15,.82);backdrop-filter:saturate(140%) blur(12px);-webkit-backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid var(--fp-line)}
+      .fp-brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--fp-ink);font-size:16px}
+      .fp-mark{width:30px;height:30px;border-radius:8px;background:var(--fp-gold);color:#241a06;display:flex;align-items:center;justify-content:center;font-size:17px}
+      .fp-nav-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+      .fp-nav-links{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+      .fp-nav-links a{color:var(--fp-muted);font-weight:500;font-size:14px;padding:7px 11px;border-radius:8px}
+      .fp-nav-links a:hover{color:var(--fp-ink);background:rgba(255,255,255,.05);text-decoration:none}
+      .fp-langs{display:flex;gap:4px}
+      .fp-langs button{font:inherit;font-size:13px;color:var(--fp-muted);background:transparent;border:1px solid var(--fp-line);border-radius:999px;padding:5px 11px;cursor:pointer}
+      .fp-langs button[aria-pressed="true"]{color:#241a06;background:var(--fp-gold);border-color:var(--fp-gold);font-weight:600}
+      main{max-width:var(--fp-maxw);margin:0 auto;padding:clamp(28px,6vw,56px) clamp(16px,5vw,40px) 72px}
+      .fp-eyebrow{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--fp-emerald)}
+      h1{font-size:clamp(32px,6vw,52px);line-height:1.08;letter-spacing:-.02em;margin:14px 0 18px;font-weight:700}
+      h2{font-size:25px;margin:46px 0 14px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+      h3{font-size:18px;margin:26px 0 10px;font-weight:600}
+      p,li{color:var(--fp-body);font-size:16.5px}
+      .fp-lead{font-size:18.5px;color:var(--fp-muted);max-width:62ch;line-height:1.7}
+      .fp-callout{border:1px solid var(--fp-line);border-left:3px solid var(--fp-emerald);background:var(--fp-emerald-soft);border-radius:12px;padding:15px 18px;margin:22px 0}
+      .fp-callout.warn{border-left-color:var(--fp-gold);background:var(--fp-gold-soft)}
+      .fp-callout p{margin:0}
+      .fp-table-wrap{border:1px solid var(--fp-line);border-radius:var(--fp-radius);overflow:hidden;margin:16px 0;background:var(--fp-card)}
+      table{width:100%;border-collapse:collapse}
+      th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--fp-line)}
+      tr:last-child td{border-bottom:none}
+      th{font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--fp-muted);font-weight:700;background:rgba(255,255,255,.02)}
+      td{font-size:14.5px;color:#CBD8D0;line-height:1.62}
+      td:first-child{color:var(--fp-ink);font-weight:600;white-space:nowrap}
+      code{font-family:var(--fp-mono);font-size:.9em;background:rgba(159,176,168,.12);border:1px solid var(--fp-line);border-radius:6px;padding:1px 6px;overflow-wrap:anywhere}
+      .fp-tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.02em}
+      .fp-tag.done{color:#7FE3B6;background:var(--fp-emerald-soft);border:1px solid rgba(31,160,106,.4)}
+      .fp-tag.gap{color:var(--fp-gold);background:var(--fp-gold-soft);border:1px solid rgba(224,192,106,.4)}
+      .fp-cov{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.02em;margin-bottom:9px}
+      .fp-cov.full{color:#7FE3B6;background:var(--fp-emerald-soft);border:1px solid rgba(31,160,106,.45)}
+      .fp-cov.high{color:#BFE6CE;background:var(--fp-emerald-soft);border:1px solid rgba(31,160,106,.3)}
+      .fp-cov.partial{color:var(--fp-gold);background:var(--fp-gold-soft);border:1px solid rgba(224,192,106,.4)}
+      .fp-cov.info{color:var(--fp-muted);background:rgba(255,255,255,.04);border:1px solid var(--fp-line)}
+      .fp-gap-cell p{margin:6px 0 0}
+      .fp-gap-cell p:first-of-type{margin-top:0}
+      .fp-gap-lbl{color:var(--fp-ink);font-weight:600}
+      .fp-foot{border-top:1px solid var(--fp-line);max-width:var(--fp-maxw);margin:0 auto;padding:26px clamp(16px,5vw,40px) 52px;color:var(--fp-muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:12px 26px;justify-content:space-between;align-items:center}
+      .fp-foot a{color:var(--fp-muted);font-weight:500}
+      .fp-foot a:hover{color:var(--fp-ink)}
+      .fp-foot-links{display:flex;flex-wrap:wrap;gap:16px}
+      [data-l]{display:none}
+      html[data-lang="zh"] [data-l="zh"],html[data-lang="en"] [data-l="en"]{display:revert}
+      @media (max-width:640px){.fp-nav-links{display:none}}
+    </style>
+  </head>
+  <body>
+    <nav class="fp-nav">
+      <a class="fp-brand" href="https://fairpoker.app/"><span class="fp-mark" aria-hidden="true">&#9824;</span>Fair Poker</a>
+      <div class="fp-nav-right">
+        <div class="fp-nav-links">
+          <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
+          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
+          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
+          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全审计</span><span data-l="en">Security Audit</span></a>
+        </div>
+        <div class="fp-langs" id="fp-langs" aria-label="Language">
+          <button type="button" data-set="zh">中文</button>
+          <button type="button" data-set="en">EN</button>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <section data-l="zh">
+        <span class="fp-eyebrow">透明度 · Transparency</span>
+        <h1>已加固内容，<br>与尚未做到的差距</h1>
+        <p class="fp-lead">我们只说能证明的。已经做到的，自信地讲清楚；还没做到的，如实标成路线图——而不是用绝对化的话术盖过去。这一页就是那份清单。</p>
+        <div class="fp-callout">
+          <p>权威可验证证据始终以 Game client CID、源码包 SHA256、source fingerprint、签名 hash-chain transcript 与本地 verifier 为准。</p>
+        </div>
+
+        <h2>已实现的加固 <span class="fp-tag done">已上线</span></h2>
+        <p>以下能力已在代码中实现并通过单元测试；标 ✓ 者已在真实浏览器双人对局验证。</p>
+        <div class="fp-table-wrap">
+          <table>
+            <thead><tr><th>能力</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>官方零裁判 · 零踢人 ✓</td><td>协议层没有"操作员踢人"事件类型，也没有中心化裁判。中继已降为哑中继：只排序、转发、报告谁在线，<strong>不计算座位 / 回合 / 赢家 / 筹码</strong>。下注 / 弃牌 / 坐离均需玩家本人签名行动；无法继续时走全员共识作废+全额退还。中继切断 WebSocket 只触发客户端指数退避自动重连，不能改变牌局状态或夺座位、筹码。</td></tr>
+              <tr><td>浏览器即权威 · 刷新不掉桌 ✓</td><td>座位 / 底池 / 轮到谁 / 赢家 / 战绩全部由你的浏览器用<strong>同一套确定性 reducer</strong> 从签名事件日志算出，不依赖中继的房间状态——两个浏览器读同一份日志必然算出一致结果。重连后按 sinceSeq 重放未读消息把日志补齐，再从日志重新算出完全相同的状态；轮到你时回归直接续上 turn，不再被错误归类为"观战中 / 请重新坐下"，下注也不会两边对不上。战绩本地留存，刷新不丢。</td></tr>
+              <tr><td>每手 4 灯公平校验 ✓</td><td>每局结束自动跑 4 项校验（牌堆完整 · 全员参与洗牌 · 记录指纹一致 · 签名齐全）并以覆盖层显示结果，通过盖"已验证"印，异常红灯并提示下载证据——主动告警层，可疑事件不需要玩家自己查 transcript。</td></tr>
+              <tr><td>断线规则极简 · 自愈或整桌作废 ✓</td><td>固定两条规则：可恢复掉线 → 无损自动恢复；密钥不可达 → 本手作废、全额退还、整桌结束建议换桌。没有"罚款 / 没收 / 操作员代踢"开关。建桌页与入场页都展示规则面板。</td></tr>
+              <tr><td>WS 自动重连+消息重放 ✓</td><td>WebSocket 断开 500ms→10s 指数退避自动重连（含抖动），重连按 sinceSeq 拉取未读消息恢复状态，不丢局、不丢 turn。</td></tr>
+              <tr><td>私有发牌端到端加密 ✓</td><td>私有 <code>card/decrypt</code> 的逐卡解密钥用收牌方公钥端到端密封（RSA-OAEP），并绑定 sender / recipient / round / cardOffset，重定向到其它人或卡位的密文会被拒收。中继只见密文。</td></tr>
+              <tr><td>解密钥只在本手期间暂存 ✓</td><td>逐卡解密钥仅在当前这一手牌进行期间暂存于本机（以便断线/刷新/关闭后重连恢复这一手），牌局一结束（分出胜负或作废）即删除，不长期保留。</td></tr>
+              <tr><td>认证不泄露密码 ✓</td><td>登录改为客户端 PBKDF2 派生 authSecret 发往服务端，密钥库密钥本地派生、永不出本机。服务端不再接触明文密码，无法即时解开密钥库冒充玩家。</td></tr>
+              <tr><td>签名绑桌号防跨桌重放 ✓</td><td>每个签名事件绑定 tableId，接收端保守拒收不属于本桌的事件。</td></tr>
+              <tr><td>默认拒收未签名事件 ✓</td><td>GameRoom 默认 <code>rejectUnsignedEvents = true</code>，正式入口显式开启；未签名 wire 事件直接拒收，离线验证器拒掉未签名 Fair Poker v0 transcript 条目。</td></tr>
+              <tr><td>运行时事件校验 ✓</td><td>所有桌面事件（下注 / 弃牌 / 开局 / 设置）与发牌事件（牌堆 / 密钥）在进入状态机前做严格结构校验，畸形或越界输入被拒，杜绝异常输入导致的状态污染或崩溃。</td></tr>
+              <tr><td>下注金额校验 ✓</td><td>下注必须为非负安全整数，堵住 NaN 等异常值污染底池。</td></tr>
+              <tr><td>牌堆 / 密钥结构校验 ✓</td><td>牌堆须为 52 个合法整数密文，逐卡密钥与公钥须合法且长度受限，防止超大数解析造成的拒绝服务。</td></tr>
+              <tr><td>验证器事件覆盖 ✓</td><td>离线 transcript 验证器现已识别并校验全部桌面事件类型，不再静默跳过。</td></tr>
+              <tr><td>会话域分离与重放检测 ✓</td><td>每个签名会话绑定随机 sessionNonce；离线验证器据此检测同一会话内的序号重放与乱序。</td></tr>
+              <tr><td>密钥强度下限 ✓</td><td>mental-poker SRA 位数下限提升至 1024（2048 位模数，离散对数不可行），并设 2048 位上限——弱参数自动上调、超大参数被夹住，同时消除"极小位数崩溃"与"超大位数卡死"两种拒绝服务；牌面还编码成二次剩余，连残差指纹也不泄露隐藏牌。</td></tr>
+              <tr><td>每手统一记录哈希 ✓</td><td>用公开事件签名计算"接收者无关"的 canonicalHandHash，离线验证器暴露且与线上一致——任意两名玩家可比对各自记录、发现篡改或缺漏。</td></tr>
+              <tr><td>客户端 CID 校验显示 ✓</td><td>安全面板对比"运行中的 CID 与权威发布 CID"，显示已锁定 / 不符 / 未从固定入口运行。</td></tr>
+              <tr><td>中继 token 移出 URL ✓</td><td>中继认证 token 改走 WebSocket 子协议而非 URL 查询串，避免进入代理 / CDN / 访问日志。</td></tr>
+              <tr><td>指纹覆盖全信任边界 ✓</td><td>source fingerprint 现覆盖认证 / 传输 / 启动 / 身份等全部信任边界文件，不再只是发牌核心。</td></tr>
+              <tr><td>客户端可复现构建 ✓</td><td>公开的源码包是<strong>完整可构建的客户端源码</strong>；在版本锁定的 Docker 工具链里 <code>npm ci</code> 重新编译，得到的 IPFS CID 与线上 Game client CID <strong>字节级一致</strong>——证明"你读到的公开源码"就是"线上真正在跑的程序"，官方无法给你看一份干净代码、却偷偷在跑另一套。复现步骤见 <a href="./verify-guide.html#reproduce">复验教程</a>。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>已知差距与路线图 <span class="fp-tag gap">路线图</span></h2>
+        <p>以下为尚未实现的已知差距。它们多属协议级或研究级工程，需在受控环境充分测试后才能上线，因此我们如实披露，而非声称已解决。对每一项，我们也写明<strong>它实际影响什么、可能的风险是什么、以及现有系统已经把多少风险兜住</strong>。</p>
+
+        <div class="fp-callout">
+          <p><strong>先记住一条：每手牌都自检。</strong>每手牌结束，你的浏览器会自动跑一遍公平验证器（牌堆完整 · 全员洗牌 · 记录指纹一致 · 签名齐全），并在摊牌时解出真实牌做重复明文检查。<strong>只要这手牌亮的是绿灯，无论下面这些研究级证明有没有上线，这一手都已被实测验证为合法</strong>——下面的差距改变的是"数学证明的强度"，而不是"这手牌到底有没有被做手脚"。</p>
+        </div>
+
+        <div class="fp-table-wrap">
+          <table>
+            <thead><tr><th>差距</th><th>可能的风险 · 当前兜底 · 计划</th></tr></thead>
+            <tbody>
+              <tr><td>可验证洗牌证明</td><td class="fp-gap-cell">
+                <div class="fp-cov full">实质作弊每手必被抓出</div>
+                <p><span class="fp-gap-lbl">可能影响：</span>理论上有人想做"假牌堆"或操纵发牌顺序。</p>
+                <p><span class="fp-gap-lbl">当前兜底：</span>三道关一起封死这条路——① 每个玩家都必须各自参与洗牌并加锁，没有任何单方（包括官方）能决定或得知牌序；② 定稿牌堆必须是 52 张互不相同的密文，做假牌堆会当场红灯；③ 每手摊牌时验证器解出真实牌再查有无重复明文、能否正确解密。<strong>只要这手牌 4 灯通过且无重复明文，这副牌就是被全员合法洗过的 52 张真牌。</strong>缺的只是"在不亮牌前用零知识数学证明合法置换"，即把现在的"事后每手必抓"升级为"事前数学上不可能"。</p>
+                <p><span class="fp-gap-lbl">计划：</span>引入可验证洗牌证明并纳入验证器。</p>
+              </td></tr>
+              <tr><td>登录抗离线爆破（部分）</td><td class="fp-gap-cell">
+                <div class="fp-cov partial">强密码下已兜住 · 不影响牌局</div>
+                <p><span class="fp-gap-lbl">可能影响：</span>只影响账号登录，且仅在"服务端被攻破、有人拿到密码库后慢慢离线猜测<strong>弱</strong>密码"时才有意义。不影响任何牌局、筹码或底牌。</p>
+                <p><span class="fp-gap-lbl">当前兜底：</span>登录只发客户端 PBKDF2 派生的 authSecret，服务端从不接触明文密码、密钥库密钥永不出本机，无法即时解开钥匙库冒充你；高轮次 PBKDF2 也大幅拖慢猜测。<strong>强密码基本完全免疫</strong>，残留风险只针对弱密码 + 已被攻破并持库的服务端。</p>
+                <p><span class="fp-gap-lbl">计划：</span>迁移到完整 OPAQUE / SRP，连弱密码的离线猜测也一并堵死。</p>
+              </td></tr>
+              <tr><td>签名跨手强绑定（部分）</td><td class="fp-gap-cell">
+                <div class="fp-cov high">跨桌重放已封死</div>
+                <p><span class="fp-gap-lbl">可能影响：</span>把一条合法签名事件"重放"到别的桌、别的版本或过期后再用。</p>
+                <p><span class="fp-gap-lbl">当前兜底：</span>每条签名事件绑定 tableId 并在线上强制拒收不属于本桌的事件——<strong>跨桌重放已完全封死</strong>；sessionNonce 会话域分离 + 序号检测还能发现同一会话内的重放与乱序。尚未强绑定的是 handId / buildCid / expiry，残留的只是"同桌跨手"这类更窄的边角场景。</p>
+                <p><span class="fp-gap-lbl">计划：</span>补全剩余域字段并在受控测试后线上强制。</p>
+              </td></tr>
+              <tr><td>桌面控制事件授权</td><td class="fp-gap-cell">
+                <div class="fp-cov high">够不到筹码与发牌</div>
+                <p><span class="fp-gap-lbl">可能影响：</span>只影响"谁能按开新局、改设置这类桌面控制按钮"。<strong>不影响下注、弃牌、筹码与发牌</strong>——那些必须玩家本人签名，任何人都偷不走你的筹码、也改不了你的牌。</p>
+                <p><span class="fp-gap-lbl">当前兜底：</span>按零裁判设计，协议层本就没有"操作员 / 房主"特权；真正涉及钱与牌的行动全部需本人签名 + 浏览器为权威 + 无法继续时全员共识作废全额退还。所以这项缺失最多造成"控制按钮的权限边界不够明确"，够不到筹码或牌面。</p>
+                <p><span class="fp-gap-lbl">进展：</span>已定义房主角色（开第一手的人即房主），并让<strong>离线验证器</strong>把"非房主擅自改设置 / 重开报名"在可复验记录里<strong>标注出来、可归因到具体签名者</strong>（CI 测试覆盖）。下一步是把这条授权在收发端也强制（现仅在验证侧标注，不在现场拦截，以免误伤刚刚重构过的开局/重开流程）。</p>
+              </td></tr>
+              <tr><td>验证器与实时逻辑统一</td><td class="fp-gap-cell">
+                <div class="fp-cov full">只会误报 · 不会漏判</div>
+                <p><span class="fp-gap-lbl">可能影响：</span>离线验证器与实时状态机暂未合并为同一套纯函数，理论上存在"某个合法事件顺序被离线验证器误判"的边角情况。</p>
+                <p><span class="fp-gap-lbl">当前兜底：</span>关键在于这种偏差只会让验证器把一手<strong>合法</strong>牌误报为可疑（宁可错杀），<strong>永远不会放过一次真正的作弊</strong>。也就是说它影响的是"会不会偶尔虚惊一场"，而不是"会不会漏掉坏人"。</p>
+                <p><span class="fp-gap-lbl">进展：</span>现场端已统一为<strong>单一确定性 reducer</strong>——座位 / 底池 / 轮到谁 / 赢家全部由它从签名事件日志算出，中继不再参与。并已加<strong>一致性测试（CI 强制）</strong>：把同一份签名记录同时喂给"可下载的离线验证器"和现场 reducer，断言两者算出的筹码结果<strong>逐分一致</strong>——<strong>弃牌结束</strong>与<strong>摊牌（含边池/比牌赢家）</strong>两条路径均已覆盖，二者永远不会悄悄分叉。剩余仅一项：把离线验证器与现场逻辑合并成<strong>同一份编译产物</strong>（需引入打包工具、并进可复现源码包，留待可验证一次发布时稳做）。</p>
+              </td></tr>
+              <tr><td>有限开源边界（非玩法页面）</td><td class="fp-gap-cell">
+                <div class="fp-cov info">不影响公平性本身</div>
+                <p><span class="fp-gap-lbl">可能影响：</span>这不是安全漏洞，而是公开范围的取舍——可玩客户端（界面 + 公平内核 + 入口 + 静态资源）的<strong>完整可构建源码已经公开、并可字节级复现</strong>；仍未公开的只是首页、营销文案、AI 摘要页与后端运维这类<strong>不参与发牌、也不进入 Game client CID</strong> 的非玩法部分。影响的只是"能否一键重建整个站点的每个角落"，不影响任何一手牌的公平性。</p>
+                <p><span class="fp-gap-lbl">当前兜底：</span>所有与公平性相关的核心文件都已开源；你可以在固定 Docker 环境里用公开源码重编出与线上一致的客户端 CID（见<a href="./verify-guide.html#reproduce">复验教程</a>），并对照逐文件哈希、信任边界清单与运行中 CID 校验，核对你正在运行的就是公开审计过的那份代码。</p>
+                <p><span class="fp-gap-lbl">计划：</span>在不被整体抄袭的前提下持续扩大可复现构建范围，并引入外部签名发布日志与第三方复现见证。</p>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="fp-callout warn">
+          <p>诚实结论：Fair Poker 比传统黑箱发牌更可审计（WebCrypto 随机、事件签名、hash-chain transcript、公开 CID、端到端加密底牌、本地复验），<strong>并且每手牌都会自动自检、实质作弊会被当场抓出</strong>。但我们仍<strong>未达到"官方与玩家在数学上都无法作弊"的强可证明公平标准</strong>——需要强调的是，上述差距大多是把"每手都能被抓出"升级为"数学上不可能"的更高标准，而非当前存在可被利用的作弊通道。我们选择公开披露，而不是用绝对化措辞掩盖。</p>
+        </div>
+      </section>
+
+      <section data-l="en">
+        <span class="fp-eyebrow">Transparency</span>
+        <h1>What's hardened,<br>and what isn't yet</h1>
+        <p class="fp-lead">We only claim what we can prove. What's done, we state plainly; what isn't, we mark honestly as roadmap — instead of papering over it with absolute language. This page is that list.</p>
+        <div class="fp-callout">
+          <p>Authoritative verifiable evidence is always the Game client CID, source archive SHA256, source fingerprint, signed hash-chain transcripts, and the local verifier. </p>
+        </div>
+
+        <h2>Hardening shipped <span class="fp-tag done">live</span></h2>
+        <p>The following is implemented in code and covered by unit tests; items marked ✓ are also verified in a real two-browser game.</p>
+        <div class="fp-table-wrap">
+          <table>
+            <thead><tr><th>Capability</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td>Operator zero referee · zero kick power ✓</td><td>The protocol has no "operator kick" event type and no centralized referee. The relay is now a dumb relay: it only orders, forwards, and reports who is online — it computes <strong>no seats / rounds / winners / chips</strong>. Bets / folds / sit-outs require the player's own signed action; only when continuation is impossible does a unanimous-void path refund the hand in full. The relay closing a WebSocket only triggers exponential-backoff client reconnect — it cannot change game state or seize a seat or chips.</td></tr>
+              <tr><td>Browser-authoritative · refresh-proof seat ✓</td><td>Seats / pot / turn order / winner / history are all computed by your browser with the <strong>same deterministic reducer</strong> over the signed event log, never from relay room state — two browsers reading the same log necessarily agree. After reconnect, sinceSeq replays missed messages to complete the log, then the browser re-derives the identical state; returning while it's your turn resumes that turn instead of being misclassified as "spectator / please sit back down", and bets no longer disagree across clients. History is kept locally and survives a refresh.</td></tr>
+              <tr><td>Four-light fairness audit per hand ✓</td><td>At the end of every hand, the browser automatically runs four checks (deck integrity · all players shuffled and locked · matching record fingerprint · signatures complete) and shows the result in an overlay. A pass stamps "verified"; a warn lights red and offers the evidence for download — an active alert on top of passive evidence.</td></tr>
+              <tr><td>Disconnect rule simplified · recover or void ✓</td><td>Two fixed rules: a recoverable disconnect auto-recovers losslessly; if a needed decrypt key is unavailable the hand voids, every bet is refunded in full, and the table ends so players start a fresh room. No "penalty / forfeit / operator kick" knobs. The rules panel is shown on host setup and the joiner waiting view.</td></tr>
+              <tr><td>WebSocket auto-reconnect + replay ✓</td><td>The WebSocket reconnects with capped exponential backoff (500 ms → 10 s, jittered) and replays missed messages by sinceSeq, so a blip never loses the hand or the turn.</td></tr>
+              <tr><td>End-to-end sealed dealing ✓</td><td>Per-card decryption keys in private <code>card/decrypt</code> messages are end-to-end sealed to the recipient's public key (RSA-OAEP), bound to sender / recipient / round / cardOffset; ciphertext redirected to a different recipient or card position is rejected. The relay sees only ciphertext.</td></tr>
+              <tr><td>Decrypt keys kept only for the live hand ✓</td><td>Per-card decrypt keys are kept on your device only for the duration of the hand currently in play (so a disconnect, refresh, or reopen can recover that hand), and are erased when the hand ends (settled or voided); never retained long-term.</td></tr>
+              <tr><td>Auth never exposes the password ✓</td><td>Login sends a client-side PBKDF2-derived authSecret; the vault key is derived locally and never leaves your browser. The server never touches the plaintext password and cannot open your vault to impersonate you.</td></tr>
+              <tr><td>Signatures bound to table id ✓</td><td>Every signed event is bound to its tableId; receivers conservatively reject events that don't belong to the table, blocking cross-table replay.</td></tr>
+              <tr><td>Reject unsigned events by default ✓</td><td>GameRoom defaults <code>rejectUnsignedEvents = true</code>, the official setup path enables it explicitly, unsigned wire events are dropped, and the offline verifier rejects unsigned Fair Poker v0 transcript entries.</td></tr>
+              <tr><td>Runtime event validation ✓</td><td>All table events (bet / fold / start / settings) and dealing events (deck / keys) are strictly structurally validated before reaching the state machine. Malformed or out-of-range input is rejected.</td></tr>
+              <tr><td>Bet amount validation ✓</td><td>Bets must be non-negative safe integers, closing off NaN and similar values that could poison the pot.</td></tr>
+              <tr><td>Deck / key structural checks ✓</td><td>The deck must be 52 valid integer ciphertexts; per-card keys and public keys must be valid and length-bounded, preventing huge-number parsing denial of service.</td></tr>
+              <tr><td>Verifier event coverage ✓</td><td>The offline transcript verifier now recognises and checks every table event type, no longer silently skipping any.</td></tr>
+              <tr><td>Session domain separation ✓</td><td>Each signing session is bound to a random sessionNonce; the offline verifier uses it to detect sequence replay and reordering within a session.</td></tr>
+              <tr><td>Key strength floor ✓</td><td>The mental-poker SRA bit floor was raised to 1024 (a 2048-bit modulus, discrete-log infeasible) with a 2048-bit ceiling — weak parameters are clamped up and oversized ones are capped, removing both the tiny-bits crash and the huge-bits hang denial of service; cards are also encoded as quadratic residues, so no residue bit leaks about hidden cards.</td></tr>
+              <tr><td>Per-hand consensus hash ✓</td><td>A receiver-independent canonicalHandHash is computed from public event signatures and exposed by the offline verifier, identical to live — any two players can compare their records and detect tampering or omission.</td></tr>
+              <tr><td>Client CID verification display ✓</td><td>The security panel compares the running CID against the authoritative release CID and shows locked / mismatch / not-pinned.</td></tr>
+              <tr><td>Relay token out of the URL ✓</td><td>The relay auth token now travels in a WebSocket subprotocol instead of the URL query string, keeping it out of proxies, CDNs, and access logs.</td></tr>
+              <tr><td>Fingerprint covers the trust boundary ✓</td><td>The source fingerprint now covers auth / transport / bootstrap / identity files — the full trust boundary, not just the dealing core.</td></tr>
+              <tr><td>Reproducible client build ✓</td><td>The published source package is the <strong>complete buildable client source</strong>; recompiling it with <code>npm ci</code> inside a version-pinned Docker toolchain yields an IPFS CID that is <strong>byte-for-byte identical</strong> to the live Game client CID — proving the public source you read is exactly the code running live, so the operator cannot show clean code while running something else. Steps: <a href="./verify-guide.html#reproduce">verification guide</a>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Known gaps on the roadmap <span class="fp-tag gap">roadmap</span></h2>
+        <p>These are known gaps that are not yet implemented. Most are protocol-level or research-level work that must be thoroughly tested in a controlled environment before shipping, so we disclose them rather than claim they are solved. For each one we also spell out <strong>what it actually affects, what the possible risk is, and how much of that risk the existing system already contains</strong>.</p>
+
+        <div class="fp-callout">
+          <p><strong>First, one thing: every hand self-checks.</strong> At the end of each hand your browser automatically runs the fairness verifier (deck integrity · everyone shuffled · matching record fingerprint · signatures complete) and, at showdown, decrypts the real cards to check for duplicate plaintext. <strong>As long as that hand shows green, it has been actively verified as legitimate — whether or not these research-level proofs have shipped.</strong> The gaps below change the <em>strength of the mathematical proof</em>, not whether that hand was actually tampered with.</p>
+        </div>
+
+        <div class="fp-table-wrap">
+          <table>
+            <thead><tr><th>Gap</th><th>Possible risk · what contains it today · plan</th></tr></thead>
+            <tbody>
+              <tr><td>Verifiable shuffle proof</td><td class="fp-gap-cell">
+                <div class="fp-cov full">Real cheating caught every hand</div>
+                <p><span class="fp-gap-lbl">What it affects:</span> in theory, someone trying to "stack the deck" or rig the deal order.</p>
+                <p><span class="fp-gap-lbl">Contained today:</span> three gates already close this off — ① every player must each shuffle and lock, so no single party (including the operator) can set or learn the order; ② the finalized deck must be 52 distinct ciphertexts, so a stacked deck lights red on the spot; ③ at every showdown the verifier decrypts the real cards and checks for duplicate plaintext and correct decryption. <strong>If a hand passes its four lights with no duplicate plaintext, that deck was a genuine 52-card deck shuffled by everyone.</strong> What's missing is only a zero-knowledge proof of a valid permutation <em>without revealing</em> — i.e. upgrading today's "caught every hand, after the fact" to "mathematically impossible, before the fact".</p>
+                <p><span class="fp-gap-lbl">Plan:</span> add a verifiable shuffle proof and fold it into the verifier.</p>
+              </td></tr>
+              <tr><td>Offline-guess-resistant login (partial)</td><td class="fp-gap-cell">
+                <div class="fp-cov partial">Contained for strong passwords · no game impact</div>
+                <p><span class="fp-gap-lbl">What it affects:</span> account login only, and only in the case where the server is breached and someone slowly offline-guesses <strong>weak</strong> passwords from the stolen database. It does not affect any hand, chips, or hole cards.</p>
+                <p><span class="fp-gap-lbl">Contained today:</span> login only sends a client-side PBKDF2-derived authSecret; the server never touches the plaintext password, the vault key never leaves your device, and it cannot instantly open your vault to impersonate you. High-iteration PBKDF2 also greatly slows guessing. <strong>A strong password is essentially immune</strong>; the residual risk is only weak passwords plus an already-breached, database-holding server.</p>
+                <p><span class="fp-gap-lbl">Plan:</span> migrate to full OPAQUE / SRP to also close off offline guessing of weak passwords.</p>
+              </td></tr>
+              <tr><td>Cross-hand signature binding (partial)</td><td class="fp-gap-cell">
+                <div class="fp-cov high">Cross-table replay already closed</div>
+                <p><span class="fp-gap-lbl">What it affects:</span> replaying a legitimate signed event into a different table, a different build, or after it has expired.</p>
+                <p><span class="fp-gap-lbl">Contained today:</span> every signed event is bound to its tableId and live-rejected if it doesn't belong to the table — <strong>cross-table replay is fully closed</strong>; sessionNonce domain separation plus sequence checks also catch replay and reordering within a session. Not yet strongly bound are handId / buildCid / expiry, so the residual is only narrow edge cases like "same-table, across hands".</p>
+                <p><span class="fp-gap-lbl">Plan:</span> add the remaining domain fields and enforce them live after controlled testing.</p>
+              </td></tr>
+              <tr><td>Table-control authorization</td><td class="fp-gap-cell">
+                <div class="fp-cov high">Cannot reach chips or dealing</div>
+                <p><span class="fp-gap-lbl">What it affects:</span> only "who may press table-control buttons like start-new-hand or change-settings". <strong>It does not affect bets, folds, chips, or dealing</strong> — those require the player's own signature, so no one can take your chips or change your cards.</p>
+                <p><span class="fp-gap-lbl">Contained today:</span> by the zero-referee design the protocol has no "operator / table owner" privilege to begin with; everything involving money and cards requires your own signature, browser-authoritative state, and a unanimous void with full refund when play can't continue. So this gap can at most leave "the permission boundary on control buttons under-specified" — it cannot reach chips or card faces.</p>
+                <p><span class="fp-gap-lbl">Progress:</span> the host role is now defined (the signer of the first hand is the host), and the <strong>offline verifier</strong> flags a non-host changing settings or reopening registration in the replayable record, <strong>attributable to the specific signer</strong> (covered by CI tests). Next is to also enforce it on senders/receivers (today it is flagged at verify time, not blocked live, to avoid disturbing the just-reworked start/restart flow).</p>
+              </td></tr>
+              <tr><td>Unify verifier and live logic</td><td class="fp-gap-cell">
+                <div class="fp-cov full">Can only false-alarm · never miss</div>
+                <p><span class="fp-gap-lbl">What it affects:</span> the offline verifier and the live state machine aren't yet one shared pure function, leaving a theoretical edge case where a legal event order could be misjudged offline.</p>
+                <p><span class="fp-gap-lbl">Contained today:</span> crucially, such a divergence can only make the verifier flag a <strong>legitimate</strong> hand as suspicious (fail-safe) — it can <strong>never let a real cheat through</strong>. So it affects "might we occasionally raise a false alarm", not "might we miss a bad actor".</p>
+                <p><span class="fp-gap-lbl">Progress:</span> the live side is now a <strong>single deterministic reducer</strong> — seats / pot / turn / winner are all derived by it from the signed event log, with the relay no longer involved. A <strong>CI-enforced parity test</strong> now feeds the same signed record to both the downloadable offline verifier and the live reducer and asserts their chip outcomes are <strong>identical to the chip</strong> — both the <strong>fold-out</strong> and the <strong>showdown (side-pot / best-hand winner)</strong> paths are covered, so the two can never silently diverge. Only one item remains: merging the offline verifier and live logic into <strong>one compiled artifact</strong> (needs adding a bundler and baking it into the reproducible source package — left for a release we can verify).</p>
+              </td></tr>
+              <tr><td>Limited-open-source boundary (non-gameplay pages)</td><td class="fp-gap-cell">
+                <div class="fp-cov info">Does not affect fairness itself</div>
+                <p><span class="fp-gap-lbl">What it affects:</span> this is not a security hole but a disclosure choice — the <strong>complete buildable source of the playable client</strong> (UI + fairness core + entry points + static assets) is public and byte-for-byte reproducible; what is still withheld is only non-gameplay parts — the homepage, marketing copy, AI summary pages, and backend operations — which <strong>do not deal cards and are not inputs to the Game client CID</strong>. It affects only "can you one-click rebuild every corner of the whole site", not the fairness of any single hand.</p>
+                <p><span class="fp-gap-lbl">Contained today:</span> all fairness-critical core files are open; you can recompile the public source in a pinned Docker environment to a client CID identical to the live one (see the <a href="./verify-guide.html#reproduce">verification guide</a>), and cross-check per-file hashes, a trust-boundary manifest, and a live CID check to confirm that what you're running is the same code that was publicly audited.</p>
+                <p><span class="fp-gap-lbl">Plan:</span> keep widening the reproducibly-buildable scope without exposing the project to wholesale copying, and add an external signed publish log plus third-party reproduction witnesses.</p>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="fp-callout warn">
+          <p>Honest bottom line: Fair Poker is far more auditable than black-box dealing (WebCrypto randomness, event signatures, hash-chain transcripts, public CIDs, end-to-end encrypted hole cards, local replay), <strong>and every hand self-checks so real cheating is caught on the spot</strong>. But it still does <strong>not yet</strong> meet a strong, fully provable "neither operator nor players can cheat" standard — and to be clear, most of the gaps above are about upgrading "caught every hand" to "mathematically impossible", not an exploitable cheating path that exists today. We disclose them rather than hide them behind absolute claims.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="fp-foot">
+      <div class="fp-foot-links">
+        <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
+        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
+        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
+        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全审计</span><span data-l="en">Security Audit</span></a>
+        <a href="https://fairpoker.app/roadmap.html"><span data-l="zh">路线图</span><span data-l="en">Roadmap</span></a>
+        <a href="https://fairpoker.app/privacy.html"><span data-l="zh">隐私</span><span data-l="en">Privacy</span></a>
+        <a href="https://fairpoker.app/terms.html"><span data-l="zh">条款</span><span data-l="en">Terms</span></a>
+        <a href="https://fairpoker.app/cookies.html">Cookie</a>
+        <a href="https://fairpoker.app/responsible-play.html"><span data-l="zh">负责任游戏</span><span data-l="en">Responsible play</span></a>
+        <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
+      </div>
+      <div><span data-l="zh">仅娱乐筹码 · 非真钱赌博</span><span data-l="en">Play chips only &middot; no real-money gambling</span></div>
+    </footer>
+
+    <script>
+      (function(){
+        var KEY='fairpoker:language';
+        var avail=Array.prototype.map.call(document.querySelectorAll('[data-l]'),function(n){return n.getAttribute('data-l')});
+        function has(l){return avail.indexOf(l)>=0}
+        var cur=null;try{cur=localStorage.getItem(KEY)}catch(e){}
+        if(!cur||!has(cur)) cur=has('zh')?'zh':(avail[0]||'zh');
+        document.documentElement.setAttribute('data-lang',cur);
+        var bar=document.getElementById('fp-langs');
+        if(bar){
+          var btns=bar.querySelectorAll('button');
+          Array.prototype.forEach.call(btns,function(b){
+            var l=b.getAttribute('data-set');
+            b.setAttribute('aria-pressed', l===cur?'true':'false');
+            b.addEventListener('click',function(){
+              document.documentElement.setAttribute('data-lang',l);
+              try{localStorage.setItem(KEY,l)}catch(e){}
+              Array.prototype.forEach.call(btns,function(x){x.setAttribute('aria-pressed', x.getAttribute('data-set')===l?'true':'false')});
+            });
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

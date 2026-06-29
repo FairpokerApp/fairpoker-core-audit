@@ -1,0 +1,32 @@
+# Pinned toolchain for byte-reproducible Fair Poker Game client builds.
+#
+# This image is the single build environment used BOTH by the owner's official
+# release (scripts/reproducible-game-build.sh, invoked by the one-click update)
+# AND by any independent auditor who wants to confirm that the Game client CID
+# served on IPFS was produced from the published source. Because both sides use
+# this exact image + npm ci (locked by package-lock.json), the resulting build
+# is identical down to the byte, so the computed CID matches.
+#
+# Pinned by digest (not just tag) so the toolchain is frozen: anyone pulling this
+# exact image years from now gets the identical Node/npm/OS userland. This digest
+# resolves to node v26.4.0 / npm 11.17.0 on debian bookworm. To roll the
+# toolchain forward, update this digest AND record it in REPRODUCIBLE_BUILD.md.
+FROM node:26-bookworm@sha256:35d3b83382381e0e2f1d066b98aba486a4fab481a241c7516389635b88d927c1
+
+WORKDIR /app
+
+# Install exactly the locked dependency tree first (separate layer for caching).
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy the rest of the source. .dockerignore keeps this identical to the public
+# source package (no node_modules, no build artifacts, no machine-local env).
+COPY . .
+
+# The build itself runs at `docker run` time so one image can rebuild any
+# release by passing the published env values (SOURCE_DATE_EPOCH and the
+# REACT_APP_SOURCE_ARCHIVE_* identity). The pruned playable client is left at
+# /app/build inside the container; the host extracts it with `docker cp` (not a
+# volume mount, which is unreliable under colima/Lima for temp paths). See
+# scripts/reproducible-game-build.sh.
+CMD ["bash", "-lc", "npm run build:repro && node scripts/create-ipfs-game-build.js"]

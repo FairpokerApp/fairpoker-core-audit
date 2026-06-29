@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh" data-lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fair Poker — 亲手复验一局牌（教程）</title>
+    <meta name="description" content="Step-by-step guide: match the deployed client to the public core source, then replay a hand transcript with the local verifier." />
+    <meta name="theme-color" content="#07130F" />
+    <style>
+      :root{
+        --fp-bg:#07130F;--fp-card:#0F2418;--fp-emerald:#1FA06A;--fp-emerald-soft:rgba(31,160,106,.14);
+        --fp-gold:#E0C06A;--fp-gold-soft:rgba(224,192,106,.12);--fp-ink:#F2EFE6;--fp-muted:#9BB0A4;
+        --fp-body:#D7E2DB;--fp-line:rgba(159,176,168,.16);--fp-radius:14px;--fp-maxw:920px;
+        --fp-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",system-ui,Arial,sans-serif;
+        --fp-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      }
+      *{box-sizing:border-box}
+      html{color-scheme:dark;scroll-behavior:smooth}
+      body{margin:0;background:var(--fp-bg);color:var(--fp-ink);font-family:var(--fp-sans);line-height:1.72;-webkit-font-smoothing:antialiased}
+      a{color:var(--fp-gold);text-decoration:none;font-weight:600}
+      a:hover{text-decoration:underline}
+      .fp-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px clamp(16px,5vw,40px);background:rgba(7,19,15,.82);backdrop-filter:saturate(140%) blur(12px);-webkit-backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid var(--fp-line)}
+      .fp-brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--fp-ink);font-size:16px}
+      .fp-mark{width:30px;height:30px;border-radius:8px;background:var(--fp-gold);color:#241a06;display:flex;align-items:center;justify-content:center;font-size:17px}
+      .fp-nav-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+      .fp-nav-links{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+      .fp-nav-links a{color:var(--fp-muted);font-weight:500;font-size:14px;padding:7px 11px;border-radius:8px}
+      .fp-nav-links a:hover{color:var(--fp-ink);background:rgba(255,255,255,.05);text-decoration:none}
+      .fp-langs{display:flex;gap:4px}
+      .fp-langs button{font:inherit;font-size:13px;color:var(--fp-muted);background:transparent;border:1px solid var(--fp-line);border-radius:999px;padding:5px 11px;cursor:pointer}
+      .fp-langs button[aria-pressed="true"]{color:#241a06;background:var(--fp-gold);border-color:var(--fp-gold);font-weight:600}
+      main{max-width:var(--fp-maxw);margin:0 auto;padding:clamp(28px,6vw,56px) clamp(16px,5vw,40px) 72px}
+      .fp-eyebrow{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--fp-emerald)}
+      h1{font-size:clamp(31px,6vw,50px);line-height:1.08;letter-spacing:-.02em;margin:14px 0 16px;font-weight:700}
+      h2{font-size:23px;margin:42px 0 12px;font-weight:700;letter-spacing:-.01em}
+      h3{font-size:18px;margin:28px 0 10px;font-weight:600;color:var(--fp-ink)}
+      h3 .fp-step{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:var(--fp-emerald-soft);color:#7FE3B6;font-size:14px;margin-right:10px;vertical-align:-3px}
+      p,li{color:var(--fp-body);font-size:16px}
+      .fp-lead{font-size:18px;color:var(--fp-muted);max-width:64ch;line-height:1.7}
+      ol{padding-left:4px;margin:12px 0;list-style:none;counter-reset:fp}
+      ol li{position:relative;margin:9px 0;padding-left:34px;counter-increment:fp}
+      ol li::before{content:counter(fp);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:7px;background:rgba(159,176,168,.12);border:1px solid var(--fp-line);color:var(--fp-muted);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+      pre{margin:14px 0;padding:16px 18px;background:#050F0B;border:1px solid var(--fp-line);border-radius:12px;overflow-x:auto;color:#CFE7D9;font-family:var(--fp-mono);font-size:13px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+      pre code{background:none;border:none;padding:0;font-size:inherit;color:inherit}
+      :not(pre)>code{font-family:var(--fp-mono);font-size:.9em;background:rgba(159,176,168,.12);border:1px solid var(--fp-line);border-radius:6px;padding:1px 6px;overflow-wrap:anywhere}
+      dl.fp-dl{display:grid;grid-template-columns:190px minmax(0,1fr);gap:1px;margin:14px 0;background:var(--fp-line);border:1px solid var(--fp-line);border-radius:12px;overflow:hidden}
+      dl.fp-dl dt{background:var(--fp-card);padding:13px 16px;font-size:12.5px;font-weight:700;color:var(--fp-muted)}
+      dl.fp-dl dd{background:var(--fp-card);padding:13px 16px;margin:0;min-width:0;overflow-wrap:anywhere;font-family:var(--fp-mono);font-size:12.5px;color:var(--fp-ink)}
+      .fp-callout{border:1px solid var(--fp-line);border-left:3px solid var(--fp-emerald);background:var(--fp-emerald-soft);border-radius:12px;padding:15px 18px;margin:20px 0}
+      .fp-callout p{margin:0}
+      .fp-foot{border-top:1px solid var(--fp-line);max-width:var(--fp-maxw);margin:0 auto;padding:26px clamp(16px,5vw,40px) 52px;color:var(--fp-muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:12px 26px;justify-content:space-between;align-items:center}
+      .fp-foot a{color:var(--fp-muted);font-weight:500}.fp-foot a:hover{color:var(--fp-ink)}
+      .fp-foot-links{display:flex;flex-wrap:wrap;gap:16px}
+      [data-l]{display:none}
+      html[data-lang="zh"] [data-l="zh"],html[data-lang="en"] [data-l="en"]{display:revert}
+      @media (max-width:760px){dl.fp-dl{grid-template-columns:1fr}.fp-nav-links{display:none}}
+    </style>
+  </head>
+  <body>
+    <nav class="fp-nav">
+      <a class="fp-brand" href="https://fairpoker.app/"><span class="fp-mark" aria-hidden="true">&#9824;</span>Fair Poker</a>
+      <div class="fp-nav-right">
+        <div class="fp-nav-links">
+          <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
+          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
+          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
+          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span></a>
+        </div>
+        <div class="fp-langs" id="fp-langs" aria-label="Language">
+          <button type="button" data-set="zh">中文</button>
+          <button type="button" data-set="en">EN</button>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <div data-l="zh">
+        <span class="fp-eyebrow">复验教程 · Verify</span>
+        <h1>亲手复验一局牌</h1>
+        <p class="fp-lead">两步走：先确认线上客户端与公开核心源码一致，再用本地 verifier 重放你下载的牌局记录。不需要相信我们——你自己跑一遍。</p>
+      </div>
+      <div data-l="en">
+        <span class="fp-eyebrow">Verify</span>
+        <h1>Verify a hand yourself</h1>
+        <p class="fp-lead">Two steps: first confirm the live client matches the public core source, then replay your downloaded hand transcript with the local verifier. You don't have to trust us — run it yourself.</p>
+      </div>
+
+      <section data-release-facts>
+        <h2><span data-l="zh">发布事实</span><span data-l="en">Release facts</span></h2>
+        <dl class="fp-dl">
+          <dt>Official domain</dt><dd>https://fairpoker.app</dd>
+          <dt>Game client CID</dt><dd><span data-release-field="gameClientCid">Read from canonical release JSON</span></dd>
+          <dt>Source package CID</dt><dd><span data-release-field="sourceCid">Read from canonical release JSON</span></dd>
+          <dt>Source package URL</dt><dd><span data-release-field="sourceArchiveUrl">Read from canonical release JSON</span></dd>
+          <dt>Source fingerprint</dt><dd><span data-release-field="sourceFingerprint">Read from canonical release JSON</span></dd>
+          <dt>Archive SHA256</dt><dd><span data-release-field="archiveSha256">Read from canonical release JSON</span></dd>
+        </dl>
+      </section>
+
+      <div data-l="zh">
+        <h3><span class="fp-step" aria-hidden="true">1</span>确认线上前端 = 公开核心代码</h3>
+        <ol>
+          <li>确认你进入的牌局客户端 CID 等于上面的 Game client CID。用 <code>ipfs.io</code>、<code>dweb.link</code> 等不同网关打开同一 CID，应得到同一份前端文件。</li>
+          <li>下载核心源码审计包，校验压缩包 SHA256 是否等于上面的 Archive SHA256。</li>
+          <li>解压后重新生成源码指纹，确认输出与上面的 Source fingerprint 一致。</li>
+        </ol>
+        <pre><code>curl -L -o release.json https://fairpoker.app/source/release.json
+SOURCE_ARCHIVE_URL=$(node -e "console.log(require('./release.json').archiveUrl)")
+ARCHIVE_SHA256=$(node -e "console.log(require('./release.json').archiveSha256.replace(/^sha256:/, ''))")
+
+curl -L -o fair-poker-source.tar.gz "$SOURCE_ARCHIVE_URL"
+
+shasum -a 256 fair-poker-source.tar.gz
+# 应等于 $ARCHIVE_SHA256
+
+mkdir fair-poker-source
+tar -xzf fair-poker-source.tar.gz -C fair-poker-source --strip-components=1
+cd fair-poker-source
+npm ci
+npm run generate:release-metadata
+grep sourceFingerprint src/generated/releaseMetadata.ts</code></pre>
+        <p>如果 SHA256 与 Source fingerprint 都一致，说明公开的发牌、洗牌、加密、解密、签名、transcript 与 verifier 代码没有被替换。</p>
+
+        <h3><span class="fp-step" aria-hidden="true">2</span>复验一局牌</h3>
+        <ol>
+          <li>在牌桌左上角打开「安全牌局」面板。</li>
+          <li>点「下载」，保存本局 transcript JSON。</li>
+          <li>在核心源码目录安装依赖，运行 verifier。</li>
+        </ol>
+        <pre><code>npm ci
+npm run verify:transcript -- /path/to/transcript.json</code></pre>
+        <div class="fp-callout"><p>输出通过，即代表本局的 hash-chain、事件顺序、签名格式、下注、奖池与结果都能在你本机重放复验。篡改 transcript 中任意关键字段，verifier 会报错或给出警告。</p></div>
+      </div>
+
+      <div data-l="en">
+        <h3><span class="fp-step" aria-hidden="true">1</span>Match the live client to the public source</h3>
+        <ol>
+          <li>Confirm the table client CID you opened equals the Game client CID above. The same CID should load identical frontend files through different IPFS gateways (<code>ipfs.io</code>, <code>dweb.link</code>).</li>
+          <li>Download the core source audit package and compare its SHA256 with the Archive SHA256 above.</li>
+          <li>Extract it, regenerate the source fingerprint, and compare it with the published Source fingerprint.</li>
+        </ol>
+        <pre><code>curl -L -o release.json https://fairpoker.app/source/release.json
+SOURCE_ARCHIVE_URL=$(node -e "console.log(require('./release.json').archiveUrl)")
+ARCHIVE_SHA256=$(node -e "console.log(require('./release.json').archiveSha256.replace(/^sha256:/, ''))")
+
+curl -L -o fair-poker-source.tar.gz "$SOURCE_ARCHIVE_URL"
+
+shasum -a 256 fair-poker-source.tar.gz
+# must equal $ARCHIVE_SHA256
+
+mkdir fair-poker-source
+tar -xzf fair-poker-source.tar.gz -C fair-poker-source --strip-components=1
+cd fair-poker-source
+npm ci
+npm run generate:release-metadata
+grep sourceFingerprint src/generated/releaseMetadata.ts</code></pre>
+        <p>If both the archive SHA256 and Source fingerprint match, the public dealing, shuffling, encryption, decryption, signing, transcript, and verifier code has not been replaced.</p>
+
+        <h3><span class="fp-step" aria-hidden="true">2</span>Replay a hand transcript</h3>
+        <ol>
+          <li>Open the Secure Table panel in the upper-left table tools.</li>
+          <li>Click Download to save the hand transcript JSON.</li>
+          <li>In the core source directory, install dependencies and run the verifier.</li>
+        </ol>
+        <pre><code>npm ci
+npm run verify:transcript -- /path/to/transcript.json</code></pre>
+        <div class="fp-callout"><p>A passing result means the hand's hash-chain, event order, signature format, bets, pot, and outcome can all be replayed on your own machine. Tampering with any important transcript field makes the verifier fail or warn.</p></div>
+      </div>
+    </main>
+
+    <footer class="fp-foot">
+      <div class="fp-foot-links">
+        <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
+        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
+        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
+        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span></a>
+        <a href="https://fairpoker.app/roadmap.html"><span data-l="zh">路线图</span><span data-l="en">Roadmap</span></a>
+        <a href="https://fairpoker.app/privacy.html"><span data-l="zh">隐私</span><span data-l="en">Privacy</span></a>
+        <a href="https://fairpoker.app/terms.html"><span data-l="zh">条款</span><span data-l="en">Terms</span></a>
+        <a href="https://fairpoker.app/cookies.html">Cookie</a>
+        <a href="https://fairpoker.app/responsible-play.html"><span data-l="zh">负责任游戏</span><span data-l="en">Responsible play</span></a>
+        <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
+      </div>
+      <div><span data-l="zh">仅娱乐筹码 · 非真钱赌博</span><span data-l="en">Play chips only &middot; no real-money gambling</span></div>
+    </footer>
+
+    <script>
+      (function(){
+        var KEY='fairpoker:language';
+        var avail=['zh','en'];
+        function has(l){return avail.indexOf(l)>=0}
+        var cur=null;try{cur=localStorage.getItem(KEY)}catch(e){}
+        if(!cur||!has(cur)) cur='zh';
+        document.documentElement.setAttribute('data-lang',cur);
+        var bar=document.getElementById('fp-langs');
+        if(bar){
+          var btns=bar.querySelectorAll('button');
+          Array.prototype.forEach.call(btns,function(b){
+            var l=b.getAttribute('data-set');
+            b.setAttribute('aria-pressed', l===cur?'true':'false');
+            b.addEventListener('click',function(){
+              document.documentElement.setAttribute('data-lang',l);
+              try{localStorage.setItem(KEY,l)}catch(e){}
+              Array.prototype.forEach.call(btns,function(x){x.setAttribute('aria-pressed', x.getAttribute('data-set')===l?'true':'false')});
+            });
+          });
+        }
+      })();
+    </script>
+    <script src="./release-identity-loader.js" defer></script>
+  </body>
+</html>

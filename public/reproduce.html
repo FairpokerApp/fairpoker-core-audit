@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="zh" data-lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fair Poker — 亲手复现线上游戏代码</title>
+    <meta name="description" content="Rebuild the playable Fair Poker client yourself from the public source and confirm its IPFS CID matches the one served live — proof that the running game is exactly the open source." />
+    <meta name="theme-color" content="#07130F" />
+    <style>
+      :root{
+        --fp-bg:#07130F;--fp-card:#0F2418;--fp-emerald:#1FA06A;--fp-emerald-soft:rgba(31,160,106,.14);
+        --fp-gold:#E0C06A;--fp-gold-soft:rgba(224,192,106,.12);--fp-ink:#F2EFE6;--fp-muted:#9BB0A4;
+        --fp-body:#D7E2DB;--fp-line:rgba(159,176,168,.16);--fp-radius:14px;--fp-maxw:920px;
+        --fp-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",system-ui,Arial,sans-serif;
+        --fp-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      }
+      *{box-sizing:border-box}
+      html{color-scheme:dark;scroll-behavior:smooth}
+      body{margin:0;background:var(--fp-bg);color:var(--fp-ink);font-family:var(--fp-sans);line-height:1.72;-webkit-font-smoothing:antialiased}
+      a{color:var(--fp-gold);text-decoration:none;font-weight:600}
+      a:hover{text-decoration:underline}
+      .fp-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px clamp(16px,5vw,40px);background:rgba(7,19,15,.82);backdrop-filter:saturate(140%) blur(12px);-webkit-backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid var(--fp-line)}
+      .fp-brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--fp-ink);font-size:16px}
+      .fp-mark{width:30px;height:30px;border-radius:8px;background:var(--fp-gold);color:#241a06;display:flex;align-items:center;justify-content:center;font-size:17px}
+      .fp-nav-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+      .fp-nav-links{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+      .fp-nav-links a{color:var(--fp-muted);font-weight:500;font-size:14px;padding:7px 11px;border-radius:8px}
+      .fp-nav-links a:hover{color:var(--fp-ink);background:rgba(255,255,255,.05);text-decoration:none}
+      .fp-langs{display:flex;gap:4px;flex-wrap:wrap}
+      .fp-langs button{font:inherit;font-size:13px;color:var(--fp-muted);background:transparent;border:1px solid var(--fp-line);border-radius:999px;padding:5px 11px;cursor:pointer}
+      .fp-langs button[aria-pressed="true"]{color:#241a06;background:var(--fp-gold);border-color:var(--fp-gold);font-weight:600}
+      main{max-width:var(--fp-maxw);margin:0 auto;padding:clamp(28px,6vw,56px) clamp(16px,5vw,40px) 72px}
+      .fp-eyebrow{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--fp-emerald)}
+      h1{font-size:clamp(31px,6vw,50px);line-height:1.08;letter-spacing:-.02em;margin:14px 0 16px;font-weight:700}
+      h2{font-size:23px;margin:42px 0 12px;font-weight:700;letter-spacing:-.01em}
+      h3{font-size:18px;margin:28px 0 10px;font-weight:600;color:var(--fp-ink)}
+      h3 .fp-step{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:var(--fp-emerald-soft);color:#7FE3B6;font-size:14px;margin-right:10px;vertical-align:-3px}
+      p,li{color:var(--fp-body);font-size:16px}
+      .fp-lead{font-size:18px;color:var(--fp-muted);max-width:64ch;line-height:1.7}
+      ol{padding-left:4px;margin:12px 0;list-style:none;counter-reset:fp}
+      ol li{position:relative;margin:9px 0;padding-left:34px;counter-increment:fp}
+      ol li::before{content:counter(fp);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:7px;background:rgba(159,176,168,.12);border:1px solid var(--fp-line);color:var(--fp-muted);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+      pre{margin:14px 0;padding:16px 18px;background:#050F0B;border:1px solid var(--fp-line);border-radius:12px;overflow-x:auto;color:#CFE7D9;font-family:var(--fp-mono);font-size:13px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+      pre code{background:none;border:none;padding:0;font-size:inherit;color:inherit}
+      :not(pre)>code{font-family:var(--fp-mono);font-size:.9em;background:rgba(159,176,168,.12);border:1px solid var(--fp-line);border-radius:6px;padding:1px 6px;overflow-wrap:anywhere}
+      dl.fp-dl{display:grid;grid-template-columns:210px minmax(0,1fr);gap:1px;margin:14px 0;background:var(--fp-line);border:1px solid var(--fp-line);border-radius:12px;overflow:hidden}
+      dl.fp-dl dt{background:var(--fp-card);padding:13px 16px;font-size:12.5px;font-weight:700;color:var(--fp-muted)}
+      dl.fp-dl dd{background:var(--fp-card);padding:13px 16px;margin:0;min-width:0;overflow-wrap:anywhere;font-family:var(--fp-mono);font-size:12.5px;color:var(--fp-ink)}
+      table.fp-tbl{width:100%;border-collapse:separate;border-spacing:0;margin:16px 0;font-size:15px;border:1px solid var(--fp-line);border-radius:12px;overflow:hidden}
+      table.fp-tbl th,table.fp-tbl td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--fp-line);vertical-align:top;color:var(--fp-body)}
+      table.fp-tbl th{background:var(--fp-card);color:var(--fp-muted);font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+      table.fp-tbl tr:last-child td{border-bottom:none}
+      table.fp-tbl td.fp-key{font-weight:600;color:var(--fp-ink);white-space:nowrap}
+      table.fp-tbl tr.fp-sum td{background:var(--fp-emerald-soft);color:var(--fp-ink);font-weight:600}
+      .fp-callout{border:1px solid var(--fp-line);border-left:3px solid var(--fp-emerald);background:var(--fp-emerald-soft);border-radius:12px;padding:15px 18px;margin:20px 0}
+      .fp-callout.warn{border-left-color:var(--fp-gold);background:var(--fp-gold-soft)}
+      .fp-callout p{margin:0}
+      .fp-cta{display:inline-flex;align-items:center;gap:8px;margin:8px 0 4px;padding:11px 18px;border-radius:999px;background:var(--fp-gold);color:#241a06;font-weight:700;font-size:15px}
+      .fp-cta:hover{text-decoration:none;filter:brightness(1.05)}
+      .fp-foot{border-top:1px solid var(--fp-line);max-width:var(--fp-maxw);margin:0 auto;padding:26px clamp(16px,5vw,40px) 52px;color:var(--fp-muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:12px 26px;justify-content:space-between;align-items:center}
+      .fp-foot a{color:var(--fp-muted);font-weight:500}.fp-foot a:hover{color:var(--fp-ink)}
+      .fp-foot-links{display:flex;flex-wrap:wrap;gap:16px}
+      [data-l]{display:none}
+      html[data-lang="zh"] [data-l="zh"],html[data-lang="en"] [data-l="en"],html[data-lang="ja"] [data-l="ja"],html[data-lang="es"] [data-l="es"],html[data-lang="fr"] [data-l="fr"],html[data-lang="de"] [data-l="de"]{display:revert}
+      @media (max-width:760px){dl.fp-dl{grid-template-columns:1fr}.fp-nav-links{display:none}}
+    </style>
+  </head>
+  <body>
+    <nav class="fp-nav">
+      <a class="fp-brand" href="https://fairpoker.app/"><span class="fp-mark" aria-hidden="true">&#9824;</span>Fair Poker</a>
+      <div class="fp-nav-right">
+        <div class="fp-nav-links">
+          <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span><span data-l="ja">ホーム</span><span data-l="es">Inicio</span><span data-l="fr">Accueil</span><span data-l="de">Start</span></a>
+          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span><span data-l="ja">証拠</span><span data-l="es">Evidencia</span><span data-l="fr">Preuves</span><span data-l="de">Belege</span></a>
+          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验一局</span><span data-l="en">Verify a hand</span><span data-l="ja">ハンド検証</span><span data-l="es">Verificar mano</span><span data-l="fr">Vérifier</span><span data-l="de">Hand prüfen</span></a>
+          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span><span data-l="ja">セキュリティ</span><span data-l="es">Seguridad</span><span data-l="fr">Sécurité</span><span data-l="de">Sicherheit</span></a>
+        </div>
+        <div class="fp-langs" id="fp-langs" aria-label="Language">
+          <button type="button" data-set="zh">中文</button>
+          <button type="button" data-set="en">EN</button>
+          <button type="button" data-set="ja">日本語</button>
+          <button type="button" data-set="es">ES</button>
+          <button type="button" data-set="fr">FR</button>
+          <button type="button" data-set="de">DE</button>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <!-- HERO -->
+      <div data-l="zh">
+        <span class="fp-eyebrow">亲手复现 · Reproduce</span>
+        <h1>证明：线上跑的游戏，就是这份开源代码</h1>
+        <p class="fp-lead">不用相信我们。你可以亲手把公开源码重新编译成游戏，再核对你编出来的「指纹」（CID）是否和线上正在跑的那一份完全相同。相同，就说明线上没有任何藏起来的代码。</p>
+      </div>
+      <div data-l="en">
+        <span class="fp-eyebrow">Reproduce</span>
+        <h1>Prove the live game is built from this open source</h1>
+        <p class="fp-lead">Don't trust us. Rebuild the playable client yourself from the public source, then check that your result's fingerprint (CID) is byte-for-byte the same as the one served live. A match means there is no hidden code running.</p>
+      </div>
+      <div data-l="ja">
+        <span class="fp-eyebrow">再現 · Reproduce</span>
+        <h1>稼働中のゲームがこの公開ソースから作られた証明</h1>
+        <p class="fp-lead">私たちを信用する必要はありません。公開ソースから自分でクライアントを再ビルドし、その「指紋」（CID）が稼働中のものと完全に一致するか確認できます。一致すれば、隠しコードは存在しません。</p>
+      </div>
+      <div data-l="es">
+        <span class="fp-eyebrow">Reproducir</span>
+        <h1>Demuestra que el juego en vivo se construye con este código abierto</h1>
+        <p class="fp-lead">No tienes que confiar en nosotros. Reconstruye tú mismo el cliente jugable desde el código público y comprueba que la huella (CID) de tu resultado sea idéntica a la que se sirve en vivo. Si coincide, no hay código oculto.</p>
+      </div>
+      <div data-l="fr">
+        <span class="fp-eyebrow">Reproduire</span>
+        <h1>Prouvez que le jeu en ligne provient de ce code open source</h1>
+        <p class="fp-lead">Pas besoin de nous croire. Reconstruisez vous-même le client jouable à partir du code public, puis vérifiez que l'empreinte (CID) de votre résultat est identique à celle servie en ligne. Une correspondance signifie qu'aucun code caché ne tourne.</p>
+      </div>
+      <div data-l="de">
+        <span class="fp-eyebrow">Reproduzieren</span>
+        <h1>Beweise: Das Live-Spiel stammt aus diesem Open-Source-Code</h1>
+        <p class="fp-lead">Du musst uns nicht vertrauen. Baue den spielbaren Client selbst aus dem öffentlichen Quellcode neu und prüfe, ob der Fingerabdruck (CID) deines Ergebnisses exakt dem live ausgelieferten entspricht. Eine Übereinstimmung bedeutet: kein versteckter Code.</p>
+      </div>
+
+      <!-- WHAT IT PROVES -->
+      <h2>
+        <span data-l="zh">它到底证明了什么</span><span data-l="en">What this actually proves</span><span data-l="ja">これが証明すること</span><span data-l="es">Qué demuestra exactamente</span><span data-l="fr">Ce que cela prouve</span><span data-l="de">Was das beweist</span>
+      </h2>
+      <div data-l="zh">
+        <p>页面上有<strong>两个不同的指纹（CID）</strong>，它们<strong>本来就不一样、也永远不该相等</strong>：</p>
+        <ul>
+          <li><strong>牌局客户端 CID</strong> = 编译好、能直接玩的成品（好比<strong>烤好的蛋糕</strong>）。</li>
+          <li><strong>核心源码包 CID</strong> = 给人阅读、审查的源代码（好比<strong>面粉和鸡蛋</strong>）。</li>
+        </ul>
+        <p>面粉的编号和蛋糕的编号永远不会一样——这很正常。<strong>你不要拿这两个互相比。</strong> 正确做法是各自验证：</p>
+        <ol>
+          <li><strong>比对 ①</strong>：你下载的源码包算出的 CID == 网站公布的核心源码包 CID → 证明你读的源码就是官方那份，没被掉包。</li>
+          <li><strong>比对 ②</strong>：你用这份源码重新编译出的成品 CID == 网站公布的牌局客户端 CID → 证明线上跑的游戏，正是这份源码编出来的。</li>
+        </ol>
+        <p><strong>① + ② 合起来 = 你能读的（源码）就是线上真在跑的（游戏）。</strong> 老板没法「给你看一份干净代码，背地里却跑一份作弊代码」——因为任何人重编都会当场对不上、立刻穿帮。</p>
+      </div>
+      <div data-l="en">
+        <p>The site shows <strong>two different fingerprints (CIDs)</strong>, and they are <strong>not the same and never should be</strong>:</p>
+        <ul>
+          <li><strong>Game client CID</strong> = the compiled, ready-to-play build (the <strong>baked cake</strong>).</li>
+          <li><strong>Core source package CID</strong> = the readable source code you audit (the <strong>flour and eggs</strong>).</li>
+        </ul>
+        <p>A bag of flour and a cake never share a label — that's normal. <strong>You do not compare these two to each other.</strong> Instead you verify each one independently:</p>
+        <ol>
+          <li><strong>Check ①</strong>: the CID of the source package you downloaded == the published Core source package CID → proves the source you're reading is the official one, not swapped.</li>
+          <li><strong>Check ②</strong>: the CID of the client you rebuilt from that source == the published Game client CID → proves the live game is compiled from exactly that source.</li>
+        </ol>
+        <p><strong>① + ② together = what you can read (source) is what is actually running (game).</strong> The operator cannot show you clean code while secretly running cheating code — any independent rebuild would fail to match and expose it instantly.</p>
+      </div>
+      <div data-l="ja">
+        <p>サイトには<strong>2つの異なる指紋（CID）</strong>があり、<strong>これらは別物で、一致することは決してありません</strong>：</p>
+        <ul>
+          <li><strong>ゲームクライアント CID</strong> = コンパイル済みで遊べる成果物（<strong>焼き上がったケーキ</strong>）。</li>
+          <li><strong>コアソースパッケージ CID</strong> = 監査用の読めるソースコード（<strong>小麦粉と卵</strong>）。</li>
+        </ul>
+        <p>小麦粉とケーキの番号が一致しないのは当然です。<strong>この2つを互いに比べてはいけません。</strong> それぞれ独立に検証します：</p>
+        <ol>
+          <li><strong>照合 ①</strong>：ダウンロードしたソースパッケージの CID == 公開のコアソースパッケージ CID → 読んでいるソースが公式で、すり替えられていない証明。</li>
+          <li><strong>照合 ②</strong>：そのソースから再ビルドした成果物の CID == 公開のゲームクライアント CID → 稼働中のゲームがまさにそのソースから作られた証明。</li>
+        </ol>
+        <p><strong>① + ② = 読めるもの（ソース）が実際に動いているもの（ゲーム）と同じ。</strong> 運営が「きれいなコードを見せて、裏で不正コードを動かす」ことはできません。誰が再ビルドしても一致せず、即座に露見します。</p>
+      </div>
+      <div data-l="es">
+        <p>El sitio muestra <strong>dos huellas (CID) distintas</strong>, y <strong>no son iguales ni deben serlo</strong>:</p>
+        <ul>
+          <li><strong>CID del cliente de juego</strong> = la compilación lista para jugar (la <strong>tarta horneada</strong>).</li>
+          <li><strong>CID del paquete de código</strong> = el código fuente legible que auditas (la <strong>harina y los huevos</strong>).</li>
+        </ul>
+        <p>Una bolsa de harina y una tarta nunca comparten etiqueta — es normal. <strong>No compares estos dos entre sí.</strong> Verifica cada uno por separado:</p>
+        <ol>
+          <li><strong>Comparación ①</strong>: el CID del paquete que descargaste == el CID del paquete de código publicado → prueba que el código que lees es el oficial, no sustituido.</li>
+          <li><strong>Comparación ②</strong>: el CID del cliente que reconstruiste == el CID del cliente de juego publicado → prueba que el juego en vivo se compiló exactamente desde ese código.</li>
+        </ol>
+        <p><strong>① + ② juntos = lo que puedes leer (código) es lo que realmente se ejecuta (juego).</strong> El operador no puede mostrar código limpio y ejecutar en secreto código tramposo: cualquier reconstrucción independiente no coincidiría y lo delataría al instante.</p>
+      </div>
+      <div data-l="fr">
+        <p>Le site affiche <strong>deux empreintes (CID) différentes</strong>, qui <strong>ne sont pas identiques et ne doivent jamais l'être</strong> :</p>
+        <ul>
+          <li><strong>CID du client de jeu</strong> = la build compilée et jouable (le <strong>gâteau cuit</strong>).</li>
+          <li><strong>CID du paquet source</strong> = le code source lisible que vous auditez (la <strong>farine et les œufs</strong>).</li>
+        </ul>
+        <p>Un sac de farine et un gâteau ne partagent jamais d'étiquette — c'est normal. <strong>Ne comparez pas ces deux-là entre eux.</strong> Vérifiez chacun séparément :</p>
+        <ol>
+          <li><strong>Comparaison ①</strong> : le CID du paquet source téléchargé == le CID du paquet source publié → prouve que le code que vous lisez est l'officiel, non remplacé.</li>
+          <li><strong>Comparaison ②</strong> : le CID du client que vous avez reconstruit == le CID du client de jeu publié → prouve que le jeu en ligne est compilé exactement à partir de ce code.</li>
+        </ol>
+        <p><strong>① + ② ensemble = ce que vous pouvez lire (source) est ce qui tourne réellement (jeu).</strong> L'opérateur ne peut pas montrer du code propre tout en exécutant secrètement du code tricheur — toute reconstruction indépendante ne correspondrait pas et le révélerait aussitôt.</p>
+      </div>
+      <div data-l="de">
+        <p>Die Seite zeigt <strong>zwei verschiedene Fingerabdrücke (CIDs)</strong>, die <strong>nicht gleich sind und es nie sein sollten</strong>:</p>
+        <ul>
+          <li><strong>Game-Client-CID</strong> = der kompilierte, spielbare Build (der <strong>gebackene Kuchen</strong>).</li>
+          <li><strong>Kern-Quellpaket-CID</strong> = der lesbare Quellcode, den du prüfst (das <strong>Mehl und die Eier</strong>).</li>
+        </ul>
+        <p>Ein Sack Mehl und ein Kuchen teilen nie dasselbe Etikett — das ist normal. <strong>Vergleiche diese beiden nicht miteinander.</strong> Prüfe jedes einzeln:</p>
+        <ol>
+          <li><strong>Vergleich ①</strong>: die CID des heruntergeladenen Quellpakets == die veröffentlichte Kern-Quellpaket-CID → beweist, dass der gelesene Quellcode der offizielle ist, nicht ausgetauscht.</li>
+          <li><strong>Vergleich ②</strong>: die CID des neu gebauten Clients == die veröffentlichte Game-Client-CID → beweist, dass das Live-Spiel genau aus diesem Quellcode kompiliert wurde.</li>
+        </ol>
+        <p><strong>① + ② zusammen = was du lesen kannst (Quellcode) ist das, was tatsächlich läuft (Spiel).</strong> Der Betreiber kann nicht sauberen Code zeigen und heimlich betrügerischen Code ausführen — jeder unabhängige Neubau würde nicht übereinstimmen und es sofort aufdecken.</p>
+      </div>
+
+      <!-- LIVE FACTS -->
+      <section data-release-facts>
+        <h2>
+          <span data-l="zh">当前发布身份（实时）</span><span data-l="en">Current release identity (live)</span><span data-l="ja">現在のリリース識別子（ライブ）</span><span data-l="es">Identidad de la versión (en vivo)</span><span data-l="fr">Identité de la version (en direct)</span><span data-l="de">Aktuelle Release-Identität (live)</span>
+        </h2>
+        <dl class="fp-dl">
+          <dt>Official domain</dt><dd>https://fairpoker.app</dd>
+          <dt>Game client CID</dt><dd><span data-release-field="gameClientCid">Read from /ai.json</span></dd>
+          <dt>Source package CID</dt><dd><span data-release-field="sourceCid">Read from /ai.json</span></dd>
+          <dt>Source package URL</dt><dd><a data-release-href="sourceArchiveUrl" href="https://fairpoker.app/source/release.json"><span data-release-field="sourceArchiveUrl">Read from /ai.json</span></a></dd>
+          <dt>Archive SHA256</dt><dd><span data-release-field="archiveSha256">Read from /ai.json</span></dd>
+        </dl>
+        <p>
+          <span data-l="zh">这些值由页面实时从 <a href="https://fairpoker.app/ai.json">ai.json</a> 读取，并未写死在本页里。精确的构建参数（含 <code>SOURCE_DATE_EPOCH</code>）见 <a data-release-href="canonicalSourceJsonUrl" href="https://fairpoker.app/source/release.json">release.json</a> 的 <code>reproducibleGameClientBuild.buildEnv</code>。</span>
+          <span data-l="en">These values are read live from <a href="https://fairpoker.app/ai.json">ai.json</a> and are not hard-coded on this page. The exact build inputs (including <code>SOURCE_DATE_EPOCH</code>) are in <a data-release-href="canonicalSourceJsonUrl" href="https://fairpoker.app/source/release.json">release.json</a> under <code>reproducibleGameClientBuild.buildEnv</code>.</span>
+          <span data-l="ja">これらの値はページが <a href="https://fairpoker.app/ai.json">ai.json</a> からライブで読み取り、ハードコードされていません。正確なビルド入力（<code>SOURCE_DATE_EPOCH</code> を含む）は <a data-release-href="canonicalSourceJsonUrl" href="https://fairpoker.app/source/release.json">release.json</a> の <code>reproducibleGameClientBuild.buildEnv</code> にあります。</span>
+          <span data-l="es">Estos valores se leen en vivo desde <a href="https://fairpoker.app/ai.json">ai.json</a> y no están fijados en esta página. Los parámetros exactos de build (incluido <code>SOURCE_DATE_EPOCH</code>) están en <a data-release-href="canonicalSourceJsonUrl" href="https://fairpoker.app/source/release.json">release.json</a>, en <code>reproducibleGameClientBuild.buildEnv</code>.</span>
+          <span data-l="fr">Ces valeurs sont lues en direct depuis <a href="https://fairpoker.app/ai.json">ai.json</a> et ne sont pas codées en dur sur cette page. Les paramètres exacts de build (dont <code>SOURCE_DATE_EPOCH</code>) sont dans <a data-release-href="canonicalSourceJsonUrl" href="https://fairpoker.app/source/release.json">release.json</a>, sous <code>reproducibleGameClientBuild.buildEnv</code>.</span>
+          <span data-l="de">Diese Werte werden live aus <a href="https://fairpoker.app/ai.json">ai.json</a> gelesen und sind auf dieser Seite nicht fest codiert. Die genauen Build-Eingaben (inkl. <code>SOURCE_DATE_EPOCH</code>) stehen in <a data-release-href="canonicalSourceJsonUrl" href="https://fairpoker.app/source/release.json">release.json</a> unter <code>reproducibleGameClientBuild.buildEnv</code>.</span>
+        </p>
+      </section>
+
+      <!-- STEPS -->
+      <h2>
+        <span data-l="zh">四步亲手复现</span><span data-l="en">Reproduce it in four steps</span><span data-l="ja">4ステップで再現</span><span data-l="es">Reprodúcelo en cuatro pasos</span><span data-l="fr">Reproduire en quatre étapes</span><span data-l="de">In vier Schritten reproduzieren</span>
+      </h2>
+      <p>
+        <span data-l="zh">需要：<code>docker</code>、<code>ipfs</code>（Kubo）、<code>node</code>。整套构建在固定版本的 Docker 环境里跑，跟你的电脑系统无关，所以人人都能编出同一个结果。</span>
+        <span data-l="en">You need: <code>docker</code>, <code>ipfs</code> (Kubo) and <code>node</code>. The whole build runs inside a version-pinned Docker toolchain, independent of your host OS, so everyone gets the same result.</span>
+        <span data-l="ja">必要なもの：<code>docker</code>、<code>ipfs</code>（Kubo）、<code>node</code>。ビルド全体はバージョン固定の Docker 環境で実行され、ホスト OS に依存しないため、誰でも同じ結果になります。</span>
+        <span data-l="es">Necesitas: <code>docker</code>, <code>ipfs</code> (Kubo) y <code>node</code>. Toda la build corre en un entorno Docker de versión fijada, independiente de tu sistema, así que todos obtienen el mismo resultado.</span>
+        <span data-l="fr">Il vous faut : <code>docker</code>, <code>ipfs</code> (Kubo) et <code>node</code>. Toute la build s'exécute dans un environnement Docker à version figée, indépendant de votre OS, donc tout le monde obtient le même résultat.</span>
+        <span data-l="de">Du brauchst: <code>docker</code>, <code>ipfs</code> (Kubo) und <code>node</code>. Der gesamte Build läuft in einer versionsfixierten Docker-Umgebung, unabhängig vom Host-OS, sodass alle dasselbe Ergebnis erhalten.</span>
+      </p>
+
+      <h3><span class="fp-step" aria-hidden="true">1</span><span data-l="zh">读取官方发布参数</span><span data-l="en">Read the official release inputs</span><span data-l="ja">公式リリース情報を取得</span><span data-l="es">Lee los datos oficiales de la versión</span><span data-l="fr">Lire les paramètres officiels</span><span data-l="de">Offizielle Release-Daten lesen</span></h3>
+      <pre><code>curl -L -o release.json https://fairpoker.app/source/release.json
+# 看 / see: gameClientCid, currentSourceRelease.ipfsCid, archiveSha256,
+#          reproducibleGameClientBuild.buildEnv (含 SOURCE_DATE_EPOCH)</code></pre>
+
+      <h3><span class="fp-step" aria-hidden="true">2</span><span data-l="zh">下载源码包并校验（比对 ①）</span><span data-l="en">Download the source package and verify (Check ①)</span><span data-l="ja">ソースパッケージをDLして検証（照合 ①）</span><span data-l="es">Descarga el paquete y verifícalo (Comparación ①)</span><span data-l="fr">Télécharger le paquet source et vérifier (Comparaison ①)</span><span data-l="de">Quellpaket laden und prüfen (Vergleich ①)</span></h3>
+      <pre><code>curl -L -o fair-poker-source.tar.gz \
+  "$(node -e "console.log(require('./release.json').archiveUrl)")"
+
+# (a) SHA256 应等于 release.json 的 archiveSha256
+shasum -a 256 fair-poker-source.tar.gz
+
+# (b) 源码包 CID 应等于 release.json 的 currentSourceRelease.ipfsCid  ← 比对 ①
+ipfs add -rQ --cid-version=1 --raw-leaves --only-hash fair-poker-source.tar.gz</code></pre>
+
+      <h3><span class="fp-step" aria-hidden="true">3</span><span data-l="zh">在固定 Docker 环境里重新编译</span><span data-l="en">Rebuild in the pinned Docker toolchain</span><span data-l="ja">固定 Docker 環境で再ビルド</span><span data-l="es">Reconstruye en el Docker fijado</span><span data-l="fr">Reconstruire dans le Docker figé</span><span data-l="de">Im fixierten Docker neu bauen</span></h3>
+      <pre><code>tar -xzf fair-poker-source.tar.gz   # → fair-poker-source/
+cd fair-poker-source
+
+# 用 release.json 的 reproducibleGameClientBuild.buildEnv 里的值：
+export SOURCE_DATE_EPOCH=...                 # buildEnv.SOURCE_DATE_EPOCH
+export REACT_APP_SOURCE_ARCHIVE_IPFS_CID=... # buildEnv 同名字段
+export REACT_APP_SOURCE_ARCHIVE_SHA256=...
+export REACT_APP_SOURCE_ARCHIVE_URL=...
+
+bash scripts/reproducible-game-build.sh ../fair-poker-source.tar.gz</code></pre>
+
+      <h3><span class="fp-step" aria-hidden="true">4</span><span data-l="zh">比对结果（比对 ②）</span><span data-l="en">Compare the result (Check ②)</span><span data-l="ja">結果を照合（照合 ②）</span><span data-l="es">Compara el resultado (Comparación ②)</span><span data-l="fr">Comparer le résultat (Comparaison ②)</span><span data-l="de">Ergebnis vergleichen (Vergleich ②)</span></h3>
+      <p>
+        <span data-l="zh">脚本最后会打印一个 <strong>Game client CID</strong>。它应当等于上面「当前发布身份」里的 <strong>Game client CID</strong>，也等于你实际进入游戏时加载的那个 CID。</span>
+        <span data-l="en">The script prints a final <strong>Game client CID</strong>. It should equal the <strong>Game client CID</strong> in "Current release identity" above — and the CID your browser actually loads when you enter the game.</span>
+        <span data-l="ja">スクリプトは最後に <strong>Game client CID</strong> を出力します。これは上の「現在のリリース識別子」の <strong>Game client CID</strong>、つまり実際にゲーム入室時に読み込まれる CID と一致するはずです。</span>
+        <span data-l="es">El script imprime un <strong>Game client CID</strong> final. Debe coincidir con el <strong>Game client CID</strong> de "Identidad de la versión" arriba — y con el CID que tu navegador carga al entrar al juego.</span>
+        <span data-l="fr">Le script affiche un <strong>Game client CID</strong> final. Il doit être égal au <strong>Game client CID</strong> de « Identité de la version » ci-dessus — et au CID que votre navigateur charge à l'entrée du jeu.</span>
+        <span data-l="de">Das Skript gibt am Ende eine <strong>Game client CID</strong> aus. Sie sollte der <strong>Game-Client-CID</strong> unter „Aktuelle Release-Identität" entsprechen — und der CID, die dein Browser beim Spielstart lädt.</span>
+      </p>
+
+      <!-- WHAT EACH COMPARISON MEANS -->
+      <h2>
+        <span data-l="zh">每个比对结果说明什么</span><span data-l="en">What each comparison proves</span><span data-l="ja">各照合が意味すること</span><span data-l="es">Qué demuestra cada comparación</span><span data-l="fr">Ce que prouve chaque comparaison</span><span data-l="de">Was jeder Vergleich beweist</span>
+      </h2>
+      <table class="fp-tbl">
+        <thead>
+          <tr>
+            <th><span data-l="zh">比对</span><span data-l="en">Comparison</span><span data-l="ja">照合</span><span data-l="es">Comparación</span><span data-l="fr">Comparaison</span><span data-l="de">Vergleich</span></th>
+            <th><span data-l="zh">对上了说明什么</span><span data-l="en">A match means</span><span data-l="ja">一致が意味すること</span><span data-l="es">Coincidir significa</span><span data-l="fr">Une correspondance signifie</span><span data-l="de">Übereinstimmung bedeutet</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="fp-key">① <span data-l="zh">你下载的源码包 CID = 公布的源码包 CID</span><span data-l="en">your source package CID = published source CID</span><span data-l="ja">DLしたソース CID = 公開ソース CID</span><span data-l="es">CID del paquete descargado = CID publicado</span><span data-l="fr">CID du paquet téléchargé = CID publié</span><span data-l="de">CID des geladenen Pakets = veröffentlichte CID</span></td>
+            <td><span data-l="zh">你正在读的源码 = 官方公布的源码，没被人掉包。</span><span data-l="en">the source you're reading is the official source, not swapped.</span><span data-l="ja">読んでいるソースが公式で、すり替えられていない。</span><span data-l="es">el código que lees es el oficial, no sustituido.</span><span data-l="fr">le code que vous lisez est l'officiel, non remplacé.</span><span data-l="de">der Code, den du liest, ist der offizielle, nicht ausgetauscht.</span></td>
+          </tr>
+          <tr>
+            <td class="fp-key">② <span data-l="zh">你重编的 CID = 公布的客户端 CID</span><span data-l="en">your rebuilt CID = published client CID</span><span data-l="ja">再ビルド CID = 公開クライアント CID</span><span data-l="es">CID reconstruido = CID del cliente publicado</span><span data-l="fr">CID reconstruit = CID du client publié</span><span data-l="de">neu gebaute CID = veröffentlichte Client-CID</span></td>
+            <td><span data-l="zh">线上正在跑的游戏 = 这份源码编出来的，没换成别的。</span><span data-l="en">the live game is built from this exact source, nothing else.</span><span data-l="ja">稼働中のゲームがこのソースから作られ、別物ではない。</span><span data-l="es">el juego en vivo se compiló desde este código, nada más.</span><span data-l="fr">le jeu en ligne est compilé à partir de ce code exact, rien d'autre.</span><span data-l="de">das Live-Spiel stammt genau aus diesem Code, nichts anderes.</span></td>
+          </tr>
+          <tr class="fp-sum">
+            <td class="fp-key">① + ②</td>
+            <td><span data-l="zh">眼见（源码）即所得（线上游戏）。老板没有藏一手的空间。</span><span data-l="en">what you see (source) is what runs (game). No room for hidden code.</span><span data-l="ja">見えるもの（ソース）が動くもの（ゲーム）。隠しコードの余地なし。</span><span data-l="es">lo que ves (código) es lo que se ejecuta (juego). Sin código oculto.</span><span data-l="fr">ce que vous voyez (code) est ce qui tourne (jeu). Aucun code caché possible.</span><span data-l="de">was du siehst (Code) ist, was läuft (Spiel). Kein Platz für versteckten Code.</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- HONEST BOUNDARY -->
+      <h2>
+        <span data-l="zh">它不证明什么（诚实边界）</span><span data-l="en">What it does not prove (honest boundary)</span><span data-l="ja">証明しないこと（誠実な境界）</span><span data-l="es">Qué no demuestra (límite honesto)</span><span data-l="fr">Ce que cela ne prouve pas (limite honnête)</span><span data-l="de">Was es nicht beweist (ehrliche Grenze)</span></h2>
+      <div class="fp-callout warn">
+        <p>
+          <span data-l="zh">这套复现证明的是<strong>玩家浏览器里跑的客户端</strong>。后端中转服务器（worker）<strong>不在</strong>复现范围内——这是有意的。但你不需要信任它：公开的客户端源码已经证明 worker 只是一个「哑巴中转」，只看得到密文，既不能发牌、不能踢人、也不能改结果。它的「无害」，你读上面那份客户端源码就能验证。</span>
+          <span data-l="en">This reproduction proves the <strong>client running in the player's browser</strong>. The backend relay server (worker) is <strong>not</strong> included — by design. But you don't need to trust it: the public client source already proves the worker is a dumb relay that only sees ciphertext and cannot deal cards, remove players, or change results. You verify its powerlessness by reading the client source above.</span>
+          <span data-l="ja">この再現が証明するのは<strong>プレイヤーのブラウザで動くクライアント</strong>です。バックエンドの中継サーバー（worker）は意図的に<strong>対象外</strong>です。しかし信用は不要です。公開クライアントソースが、worker は暗号文しか見えない「単なる中継」であり、配牌・追放・結果改変ができないことを既に証明しています。その無力さは上のクライアントソースを読めば検証できます。</span>
+          <span data-l="es">Esta reproducción demuestra el <strong>cliente que corre en el navegador del jugador</strong>. El servidor de retransmisión (worker) <strong>no</strong> se incluye — a propósito. Pero no necesitas confiar en él: el código público del cliente ya demuestra que el worker es un mero relé que solo ve texto cifrado y no puede repartir cartas, expulsar jugadores ni cambiar resultados. Verificas su impotencia leyendo el código del cliente de arriba.</span>
+          <span data-l="fr">Cette reproduction prouve le <strong>client qui tourne dans le navigateur du joueur</strong>. Le serveur relais backend (worker) n'est <strong>pas</strong> inclus — par conception. Mais vous n'avez pas à lui faire confiance : le code public du client prouve déjà que le worker n'est qu'un relais passif qui ne voit que du chiffré et ne peut ni distribuer les cartes, ni exclure des joueurs, ni changer les résultats. Vous vérifiez son impuissance en lisant le code du client ci-dessus.</span>
+          <span data-l="de">Diese Reproduktion beweist den <strong>Client im Browser des Spielers</strong>. Der Backend-Relay-Server (Worker) ist absichtlich <strong>nicht</strong> enthalten. Du musst ihm aber nicht vertrauen: Der öffentliche Client-Code beweist bereits, dass der Worker nur ein dummer Relay ist, der nur Chiffretext sieht und weder Karten geben, Spieler entfernen noch Ergebnisse ändern kann. Seine Machtlosigkeit prüfst du, indem du den obigen Client-Code liest.</span>
+        </p>
+      </div>
+
+      <p style="margin-top:26px">
+        <a class="fp-cta" data-release-href="sourceArchiveUrl" href="https://fairpoker.app/source/release.json"><span data-l="zh">下载核心源码包 →</span><span data-l="en">Download the source package →</span><span data-l="ja">ソースパッケージを入手 →</span><span data-l="es">Descargar el paquete →</span><span data-l="fr">Télécharger le paquet →</span><span data-l="de">Quellpaket laden →</span></a>
+        &nbsp;
+        <a href="https://fairpoker.app/source/REPRODUCIBLE_BUILD.md"><span data-l="zh">完整复现说明书</span><span data-l="en">Full reproducible-build guide</span><span data-l="ja">完全な再現ビルド手順</span><span data-l="es">Guía completa de build reproducible</span><span data-l="fr">Guide complet de build reproductible</span><span data-l="de">Vollständige Reproducible-Build-Anleitung</span></a>
+      </p>
+    </main>
+
+    <footer class="fp-foot">
+      <div class="fp-foot-links">
+        <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span><span data-l="ja">ホーム</span><span data-l="es">Inicio</span><span data-l="fr">Accueil</span><span data-l="de">Start</span></a>
+        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span><span data-l="ja">証拠</span><span data-l="es">Evidencia</span><span data-l="fr">Preuves</span><span data-l="de">Belege</span></a>
+        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验一局</span><span data-l="en">Verify a hand</span><span data-l="ja">ハンド検証</span><span data-l="es">Verificar mano</span><span data-l="fr">Vérifier</span><span data-l="de">Hand prüfen</span></a>
+        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span><span data-l="ja">セキュリティ</span><span data-l="es">Seguridad</span><span data-l="fr">Sécurité</span><span data-l="de">Sicherheit</span></a>
+        <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
+      </div>
+      <div><span data-l="zh">仅娱乐筹码 · 非真钱赌博</span><span data-l="en">Play chips only &middot; no real-money gambling</span><span data-l="ja">娯楽用チップのみ · 実金ギャンブルなし</span><span data-l="es">Solo fichas de juego &middot; sin dinero real</span><span data-l="fr">Jetons de jeu uniquement &middot; sans argent réel</span><span data-l="de">Nur Spielchips &middot; kein Echtgeld-Glücksspiel</span></div>
+    </footer>
+
+    <script>
+      (function(){
+        var KEY='fairpoker:language';
+        var avail=['zh','en','ja','es','fr','de'];
+        function has(l){return avail.indexOf(l)>=0}
+        var cur=null;try{cur=localStorage.getItem(KEY)}catch(e){}
+        if(!cur||!has(cur)){
+          var nav=(navigator.language||'zh').slice(0,2).toLowerCase();
+          cur=has(nav)?nav:'zh';
+        }
+        document.documentElement.setAttribute('data-lang',cur);
+        var bar=document.getElementById('fp-langs');
+        if(bar){
+          var btns=bar.querySelectorAll('button');
+          Array.prototype.forEach.call(btns,function(b){
+            var l=b.getAttribute('data-set');
+            b.setAttribute('aria-pressed', l===cur?'true':'false');
+            b.addEventListener('click',function(){
+              document.documentElement.setAttribute('data-lang',l);
+              try{localStorage.setItem(KEY,l)}catch(e){}
+              Array.prototype.forEach.call(btns,function(x){x.setAttribute('aria-pressed', x.getAttribute('data-set')===l?'true':'false')});
+            });
+          });
+        }
+      })();
+    </script>
+    <script src="./release-identity-loader.js" defer></script>
+  </body>
+</html>

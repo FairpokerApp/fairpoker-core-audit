@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="zh" data-lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fair Poker — 公平证据报告</title>
+    <meta name="description" content="Fair Poker fairness evidence report: server-not-dealer model, IPFS release identity, source fingerprint, hash-chain transcripts, and local verification." />
+    <meta name="theme-color" content="#07130F" />
+    <style>
+      :root{
+        --fp-bg:#07130F;--fp-card:#0F2418;--fp-emerald:#1FA06A;--fp-emerald-soft:rgba(31,160,106,.14);
+        --fp-gold:#E0C06A;--fp-gold-soft:rgba(224,192,106,.12);--fp-ink:#F2EFE6;--fp-muted:#9BB0A4;
+        --fp-body:#D7E2DB;--fp-line:rgba(159,176,168,.16);--fp-radius:14px;--fp-maxw:980px;
+        --fp-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",system-ui,Arial,sans-serif;
+        --fp-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      }
+      *{box-sizing:border-box}
+      html{color-scheme:dark;scroll-behavior:smooth}
+      body{margin:0;background:var(--fp-bg);color:var(--fp-ink);font-family:var(--fp-sans);line-height:1.72;-webkit-font-smoothing:antialiased}
+      a{color:var(--fp-gold);text-decoration:none;font-weight:600}
+      a:hover{text-decoration:underline}
+      .fp-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px clamp(16px,5vw,40px);background:rgba(7,19,15,.82);backdrop-filter:saturate(140%) blur(12px);-webkit-backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid var(--fp-line)}
+      .fp-brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--fp-ink);font-size:16px}
+      .fp-mark{width:30px;height:30px;border-radius:8px;background:var(--fp-gold);color:#241a06;display:flex;align-items:center;justify-content:center;font-size:17px}
+      .fp-nav-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+      .fp-nav-links{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+      .fp-nav-links a{color:var(--fp-muted);font-weight:500;font-size:14px;padding:7px 11px;border-radius:8px}
+      .fp-nav-links a:hover{color:var(--fp-ink);background:rgba(255,255,255,.05);text-decoration:none}
+      .fp-langs{display:flex;gap:4px}
+      .fp-langs button{font:inherit;font-size:13px;color:var(--fp-muted);background:transparent;border:1px solid var(--fp-line);border-radius:999px;padding:5px 11px;cursor:pointer}
+      .fp-langs button[aria-pressed="true"]{color:#241a06;background:var(--fp-gold);border-color:var(--fp-gold);font-weight:600}
+      main{max-width:var(--fp-maxw);margin:0 auto;padding:clamp(28px,6vw,56px) clamp(16px,5vw,40px) 72px}
+      .fp-eyebrow{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--fp-emerald)}
+      h1{font-size:clamp(32px,6vw,52px);line-height:1.08;letter-spacing:-.02em;margin:14px 0 16px;font-weight:700}
+      h2{font-size:23px;margin:44px 0 12px;font-weight:700;letter-spacing:-.01em}
+      h3{font-size:17px;margin:24px 0 8px;font-weight:600}
+      p,li{color:var(--fp-body);font-size:16px}
+      .fp-lead{font-size:18px;color:var(--fp-muted);max-width:64ch;line-height:1.7}
+      .fp-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:24px 0 8px}
+      .fp-stat{background:var(--fp-card);border:1px solid var(--fp-line);border-radius:12px;padding:16px}
+      .fp-stat span{display:block;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-muted)}
+      .fp-stat strong{display:block;margin-top:6px;font-size:15px;color:var(--fp-ink)}
+      .fp-card{background:var(--fp-card);border:1px solid var(--fp-line);border-radius:var(--fp-radius);padding:20px 22px;margin:16px 0}
+      .fp-callout{border:1px solid var(--fp-line);border-left:3px solid var(--fp-emerald);background:var(--fp-emerald-soft);border-radius:12px;padding:15px 18px;margin:20px 0}
+      .fp-callout.warn{border-left-color:var(--fp-gold);background:var(--fp-gold-soft)}
+      .fp-callout p{margin:0 0 8px}.fp-callout p:last-child{margin:0}
+      ul.fp-check{list-style:none;margin:14px 0;padding:0;display:grid;gap:10px}
+      ul.fp-check li{position:relative;padding:13px 16px 13px 42px;background:var(--fp-card);border:1px solid var(--fp-line);border-radius:12px;font-size:15px;color:#CBD8D0;line-height:1.6}
+      ul.fp-check li::before{content:"";position:absolute;left:15px;top:17px;width:14px;height:8px;border-left:2px solid var(--fp-emerald);border-bottom:2px solid var(--fp-emerald);transform:rotate(-45deg)}
+      dl.fp-dl{display:grid;grid-template-columns:200px minmax(0,1fr);gap:1px;margin:14px 0;background:var(--fp-line);border:1px solid var(--fp-line);border-radius:12px;overflow:hidden}
+      dl.fp-dl dt{background:var(--fp-card);padding:13px 16px;font-size:12.5px;font-weight:700;color:var(--fp-muted)}
+      dl.fp-dl dd{background:var(--fp-card);padding:13px 16px;margin:0;min-width:0;overflow-wrap:anywhere;font-family:var(--fp-mono);font-size:13px;color:var(--fp-ink)}
+      .fp-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+      .fp-links a{display:block;padding:14px 16px;background:var(--fp-card);border:1px solid var(--fp-line);border-radius:12px;color:var(--fp-ink);font-weight:600;overflow-wrap:anywhere}
+      .fp-links a:hover{border-color:rgba(224,192,106,.5);text-decoration:none}
+      .fp-links a small{display:block;color:var(--fp-muted);font-weight:500;font-size:12.5px;margin-top:3px}
+      .fp-foot{border-top:1px solid var(--fp-line);max-width:var(--fp-maxw);margin:0 auto;padding:26px clamp(16px,5vw,40px) 52px;color:var(--fp-muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:12px 26px;justify-content:space-between;align-items:center}
+      .fp-foot a{color:var(--fp-muted);font-weight:500}.fp-foot a:hover{color:var(--fp-ink)}
+      .fp-foot-links{display:flex;flex-wrap:wrap;gap:16px}
+      [data-l]{display:none}
+      html[data-lang="zh"] [data-l="zh"],html[data-lang="en"] [data-l="en"]{display:revert}
+      @media (max-width:760px){.fp-stat-grid,.fp-links{grid-template-columns:1fr}dl.fp-dl{grid-template-columns:1fr}.fp-nav-links{display:none}}
+    </style>
+  </head>
+  <body>
+    <nav class="fp-nav">
+      <a class="fp-brand" href="https://fairpoker.app/"><span class="fp-mark" aria-hidden="true">&#9824;</span>Fair Poker</a>
+      <div class="fp-nav-right">
+        <div class="fp-nav-links">
+          <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
+          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
+          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
+          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span></a>
+        </div>
+        <div class="fp-langs" id="fp-langs" aria-label="Language">
+          <button type="button" data-set="zh">中文</button>
+          <button type="button" data-set="en">EN</button>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <section data-l="zh">
+        <span class="fp-eyebrow">公平证据 · Evidence</span>
+        <h1>公平证据报告</h1>
+        <p class="fp-lead">面向普通玩家与技术审计者，公开说明 Fair Poker 的"服务器不发牌"模型、IPFS 发布身份、源码指纹、哈希链 transcript，以及任何人都能在本地复验的方式。</p>
+        <div class="fp-stat-grid">
+          <div class="fp-stat"><span>官方域名</span><strong>fairpoker.app</strong></div>
+          <div class="fp-stat"><span>牌局客户端</span><strong>IPFS CID 固定</strong></div>
+          <div class="fp-stat"><span>审计证据</span><strong>SHA256 + 签名记录</strong></div>
+        </div>
+
+        <h2>结论摘要</h2>
+        <ul class="fp-check">
+          <li>没有传统发牌服务器：Cloudflare Worker 只做全球边缘 WebSocket 中继，不生成牌序、不保存隐藏牌堆明文，也不持有可单方开牌的解密材料。</li>
+          <li>牌序由玩家浏览器共同形成——各自贡献密钥、加密、洗牌、锁牌、逐卡解密；私有底牌端到端加密，中继只见密文。</li>
+          <li>牌局客户端由 IPFS CID 固定发布；文件一改，CID 就变。核心公平源码公开供复验。</li>
+          <li>每局可下载签名 transcript，在本地复验事件顺序、签名、下注、奖池、公共牌、摊牌与最终哈希链。</li>
+          <li>"平台控牌、偷看底牌、事后改赢家"这三类风险，被放进同一条可下载、可重放、可比对的证据链。</li>
+        </ul>
+
+        <h2>发布证据</h2>
+        <p>当前权威发布身份（运行时从 <a href="https://fairpoker.app/ai.json" target="_blank" rel="noreferrer">ai.json</a> 读取）：</p>
+        <dl class="fp-dl">
+          <dt>官方域名</dt><dd>https://fairpoker.app</dd>
+          <dt>牌局客户端 CID</dt><dd><span data-release-field="gameClientCid">Read from canonical release JSON</span></dd>
+          <dt>核心源码包 CID</dt><dd><span data-release-field="sourceCid">Read from canonical release JSON</span></dd>
+          <dt>源码指纹</dt><dd><span data-release-field="sourceFingerprint">Read from canonical release JSON</span></dd>
+          <dt>源码包 SHA256</dt><dd><span data-release-field="archiveSha256">Read from canonical release JSON</span></dd>
+        </dl>
+        <div class="fp-callout"><p>牌局客户端 CID、源码包 CID、源码包 SHA256、source fingerprint 必须组成<strong>同一组 tuple</strong>。若缓存页面、旧镜像、搜索摘要或第三方复制页显示不同组合，应视为过期副本——请回到权威发布文件重新比对。</p></div>
+
+        <h2>更深一层（按需查看）</h2>
+        <ul class="fp-check">
+          <li><strong>官方为什么无法作弊：</strong>在公布的 CID 与可本地复验的 transcript 下，改赢家、改下注、偷看底牌或换牌序，都会让签名、哈希链或 verifier 复验失败——完整攻击与防护边界见 <a href="https://fairpoker.app/security.html">安全模型</a>。</li>
+          <li><strong>如何亲手复验：</strong>牌桌安全面板点"下载记录"+"本地检查"即可在本机复验；技术用户可用审计包里的 verifier 独立复验——逐步教程见 <a href="https://fairpoker.app/verify-guide.html">复验教程</a>。</li>
+          <li><strong>诚实边界：</strong>以上封的是"官方"单方作弊；线下串通与路线图上的可验证洗牌证明，如实列在 <a href="https://fairpoker.app/roadmap.html">路线图</a>。</li>
+        </ul>
+
+        <h2>浏览器可打开的证据链接</h2>
+        <div class="fp-links">
+          <a href="https://fairpoker.app/source/release.json" target="_blank" rel="noreferrer">源码发布清单<small>官方 release.json</small></a>
+          <a href="https://fairpoker.app/source/" data-release-href="sourceArchiveUrl" target="_blank" rel="noreferrer">源码审计包下载<small>官方域名</small></a>
+          <a href="https://ipfs.io/ipfs/" data-release-href="sourceIpfsUrl" target="_blank" rel="noreferrer">源码审计包<small>IPFS · ipfs.io 网关</small></a>
+          <a href="https://dweb.link/" data-release-href="sourceDwebUrl" target="_blank" rel="noreferrer">源码审计包<small>IPFS · dweb.link 备用网关</small></a>
+          <a href="https://ipfs.io/ipfs/" data-release-href="gameIpfsIoUrl" target="_blank" rel="noreferrer">牌局客户端<small>IPFS · ipfs.io 网关</small></a>
+          <a href="https://dweb.link/" data-release-href="gameDwebUrl" target="_blank" rel="noreferrer">牌局客户端<small>IPFS · dweb.link 备用网关</small></a>
+        </div>
+
+        <h2>隐私与使用边界</h2>
+        <div class="fp-callout warn">
+          <p>登录与重连只使用必要资料；安全提示只展示脱敏结果，不公开完整 IP、完整浏览器指纹或敏感设备细节。必要的本地存储仅用于登录、语言、牌局身份与重连。</p>
+          <p>公开源码用于公平性审计，<strong>不代表</strong>授权复制、镜像、改名运营或创建混淆性服务。Fair Poker 保留源码包、文件级 SHA256、CID 与发布证据，并将据此对未授权使用发起下架与追责。</p>
+        </div>
+      </section>
+
+      <section data-l="en">
+        <span class="fp-eyebrow">Evidence</span>
+        <h1>Fairness evidence report</h1>
+        <p class="fp-lead">For both regular players and technical auditors: how Fair Poker's server-not-dealer model, IPFS release identity, source fingerprint, and hash-chain transcripts work — and how anyone can verify a hand locally.</p>
+        <div class="fp-stat-grid">
+          <div class="fp-stat"><span>Official domain</span><strong>fairpoker.app</strong></div>
+          <div class="fp-stat"><span>Table client</span><strong>Pinned IPFS CID</strong></div>
+          <div class="fp-stat"><span>Audit evidence</span><strong>SHA256 + signed log</strong></div>
+        </div>
+
+        <h2>Summary</h2>
+        <ul class="fp-check">
+          <li>No traditional dealing server: the Cloudflare Worker is only an edge WebSocket relay. It does not generate the card order, store cleartext of the hidden deck, or hold material to unilaterally open cards.</li>
+          <li>The card order is formed jointly by player browsers — each contributes keys, encrypts, shuffles, locks, and decrypts per card. Private hole cards are end-to-end encrypted; the relay sees only ciphertext.</li>
+          <li>The table client is pinned by an IPFS CID; change a file and the CID changes. The core fairness source is public for verification.</li>
+          <li>Every hand exports a signed transcript you can replay locally to check order, signatures, bets, pot, board, showdown, and the final hash chain.</li>
+          <li>"Operator controls cards", "peeks at hole cards", and "rewrites the winner" all collapse into one downloadable, replayable, comparable evidence chain.</li>
+        </ul>
+
+        <h2>Release evidence</h2>
+        <p>The current authoritative release identity (read at runtime from <a href="https://fairpoker.app/ai.json" target="_blank" rel="noreferrer">ai.json</a>):</p>
+        <dl class="fp-dl">
+          <dt>Official domain</dt><dd>https://fairpoker.app</dd>
+          <dt>Game client CID</dt><dd><span data-release-field="gameClientCid">Read from canonical release JSON</span></dd>
+          <dt>Core source CID</dt><dd><span data-release-field="sourceCid">Read from canonical release JSON</span></dd>
+          <dt>Source fingerprint</dt><dd><span data-release-field="sourceFingerprint">Read from canonical release JSON</span></dd>
+          <dt>Source archive SHA256</dt><dd><span data-release-field="archiveSha256">Read from canonical release JSON</span></dd>
+        </dl>
+        <div class="fp-callout"><p>The game client CID, source CID, archive SHA256, and source fingerprint must form <strong>one matching tuple</strong>. If a cached page, old mirror, search snippet, or third-party copy shows a different combination, treat it as a stale copy and re-check against the authoritative release files.</p></div>
+
+        <h2>Go deeper (optional)</h2>
+        <ul class="fp-check">
+          <li><strong>Why the operator can't cheat:</strong> under the published CID and a locally-verifiable transcript, rewriting the winner, changing bets, peeking at hole cards, or reordering the deck all break signatures, the hash chain, or verifier replay — the full attack-and-defense boundary is in the <a href="https://fairpoker.app/security.html">security model</a>.</li>
+          <li><strong>How to verify yourself:</strong> in the table's security panel use "Download record" + "Local check" to re-verify on-device; technical users can run the verifier from the audit package — step-by-step in the <a href="https://fairpoker.app/verify-guide.html">verification guide</a>.</li>
+          <li><strong>Honest boundary:</strong> this closes <em>operator-side</em> cheating; off-table collusion and the roadmap's verifiable shuffle proof are disclosed on the <a href="https://fairpoker.app/roadmap.html">roadmap</a>.</li>
+        </ul>
+
+        <h2>Evidence links</h2>
+        <div class="fp-links">
+          <a href="https://fairpoker.app/source/release.json" target="_blank" rel="noreferrer">Source release manifest<small>official release.json</small></a>
+          <a href="https://fairpoker.app/source/" data-release-href="sourceArchiveUrl" target="_blank" rel="noreferrer">Source audit package<small>official domain</small></a>
+          <a href="https://ipfs.io/ipfs/" data-release-href="sourceIpfsUrl" target="_blank" rel="noreferrer">Source audit package<small>IPFS · ipfs.io</small></a>
+          <a href="https://dweb.link/" data-release-href="sourceDwebUrl" target="_blank" rel="noreferrer">Source audit package<small>IPFS · dweb.link</small></a>
+          <a href="https://ipfs.io/ipfs/" data-release-href="gameIpfsIoUrl" target="_blank" rel="noreferrer">Game client<small>IPFS · ipfs.io</small></a>
+          <a href="https://dweb.link/" data-release-href="gameDwebUrl" target="_blank" rel="noreferrer">Game client<small>IPFS · dweb.link</small></a>
+        </div>
+
+        <h2>Privacy and usage boundary</h2>
+        <div class="fp-callout warn">
+          <p>Login and reconnection use only what's necessary; safety hints show redacted results only — never full IP, full browser fingerprint, or sensitive device details. Local storage is used only for login, language, table identity, and reconnection.</p>
+          <p>Public source is for fairness auditing and <strong>does not</strong> grant permission to copy, mirror, rebrand, or run confusingly similar services. Fair Poker retains the source package, per-file SHA256, CIDs, and release evidence, and will act on unauthorized use.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="fp-foot">
+      <div class="fp-foot-links">
+        <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
+        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
+        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
+        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span></a>
+        <a href="https://fairpoker.app/roadmap.html"><span data-l="zh">路线图</span><span data-l="en">Roadmap</span></a>
+        <a href="https://fairpoker.app/privacy.html"><span data-l="zh">隐私</span><span data-l="en">Privacy</span></a>
+        <a href="https://fairpoker.app/terms.html"><span data-l="zh">条款</span><span data-l="en">Terms</span></a>
+        <a href="https://fairpoker.app/cookies.html">Cookie</a>
+        <a href="https://fairpoker.app/responsible-play.html"><span data-l="zh">负责任游戏</span><span data-l="en">Responsible play</span></a>
+        <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
+      </div>
+      <div><span data-l="zh">仅娱乐筹码 · 非真钱赌博</span><span data-l="en">Play chips only &middot; no real-money gambling</span></div>
+    </footer>
+
+    <script>
+      (function(){
+        var KEY='fairpoker:language';
+        var avail=Array.prototype.map.call(document.querySelectorAll('[data-l]'),function(n){return n.getAttribute('data-l')});
+        function has(l){return avail.indexOf(l)>=0}
+        var cur=null;try{cur=localStorage.getItem(KEY)}catch(e){}
+        if(!cur||!has(cur)) cur=has('zh')?'zh':(avail[0]||'zh');
+        document.documentElement.setAttribute('data-lang',cur);
+        var bar=document.getElementById('fp-langs');
+        if(bar){
+          var btns=bar.querySelectorAll('button');
+          Array.prototype.forEach.call(btns,function(b){
+            var l=b.getAttribute('data-set');
+            b.setAttribute('aria-pressed', l===cur?'true':'false');
+            b.addEventListener('click',function(){
+              document.documentElement.setAttribute('data-lang',l);
+              try{localStorage.setItem(KEY,l)}catch(e){}
+              Array.prototype.forEach.call(btns,function(x){x.setAttribute('aria-pressed', x.getAttribute('data-set')===l?'true':'false')});
+            });
+          });
+        }
+      })();
+    </script>
+    <script src="./release-identity-loader.js" defer></script>
+  </body>
+</html>

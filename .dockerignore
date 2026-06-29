@@ -1,0 +1,21 @@
+# Keep the reproducible-build context limited to source the build actually needs,
+# and identical to what the public source package ships. Excluding machine-local
+# and generated artifacts is what makes the owner's official build and an
+# independent rebuild byte-identical.
+node_modules
+build
+release
+coverage
+repro-build
+.git
+# Machine-local env overrides must never enter the reproducible build. CRA loads
+# .env.local in production too, so leaving it in would make the official build
+# depend on the owner's machine. Only .env.production (public, shipped) is used.
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+ssh
+*.log
+.DS_Store
+**/.DS_Store

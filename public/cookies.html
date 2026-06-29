@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh" data-lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fair Poker — Cookie 与本地存储说明 / Cookie &amp; Local Storage Policy</title>
+    <meta name="description" content="Fair Poker Cookie and Local Storage Policy: only strictly necessary functional storage, no advertising or third-party tracking cookies, and how to clear it." />
+    <meta name="theme-color" content="#07130F" />
+    <style>
+      :root{
+        --fp-bg:#07130F;--fp-card:#0F2418;--fp-emerald:#1FA06A;--fp-emerald-soft:rgba(31,160,106,.14);
+        --fp-gold:#E0C06A;--fp-gold-soft:rgba(224,192,106,.12);--fp-ink:#F2EFE6;--fp-muted:#9BB0A4;
+        --fp-body:#D7E2DB;--fp-line:rgba(159,176,168,.16);--fp-radius:14px;--fp-maxw:1040px;
+        --fp-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",system-ui,Arial,sans-serif;
+        --fp-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      }
+      *{box-sizing:border-box}
+      html{color-scheme:dark;scroll-behavior:smooth}
+      body{margin:0;background:var(--fp-bg);color:var(--fp-ink);font-family:var(--fp-sans);line-height:1.72;-webkit-font-smoothing:antialiased}
+      a{color:var(--fp-gold);text-decoration:none;font-weight:600}
+      a:hover{text-decoration:underline}
+      .fp-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px clamp(16px,5vw,40px);background:rgba(7,19,15,.82);backdrop-filter:saturate(140%) blur(12px);-webkit-backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid var(--fp-line)}
+      .fp-brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--fp-ink);font-size:16px}
+      .fp-mark{width:30px;height:30px;border-radius:8px;background:var(--fp-gold);color:#241a06;display:flex;align-items:center;justify-content:center;font-size:17px}
+      .fp-nav-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+      .fp-nav-links{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+      .fp-nav-links a{color:var(--fp-muted);font-weight:500;font-size:14px;padding:7px 11px;border-radius:8px}
+      .fp-nav-links a:hover{color:var(--fp-ink);background:rgba(255,255,255,.05);text-decoration:none}
+      .fp-langs{display:flex;gap:4px}
+      .fp-langs button{font:inherit;font-size:13px;color:var(--fp-muted);background:transparent;border:1px solid var(--fp-line);border-radius:999px;padding:5px 11px;cursor:pointer}
+      .fp-langs button[aria-pressed="true"]{color:#241a06;background:var(--fp-gold);border-color:var(--fp-gold);font-weight:600}
+      main{max-width:var(--fp-maxw);margin:0 auto;padding:clamp(28px,6vw,56px) clamp(16px,5vw,40px) 72px}
+      .fp-eyebrow{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--fp-emerald)}
+      h1{font-size:clamp(31px,6vw,50px);line-height:1.08;letter-spacing:-.02em;margin:14px 0 12px;font-weight:700}
+      h2{font-size:21px;margin:38px 0 12px;font-weight:700;letter-spacing:-.01em;scroll-margin-top:74px}
+      p,li{color:var(--fp-body);font-size:15.5px}
+      .fp-lead{font-size:18px;color:var(--fp-muted);max-width:70ch;line-height:1.7}
+      .fp-updated{display:inline-block;font-size:12.5px;color:var(--fp-muted);border:1px solid var(--fp-line);border-radius:999px;padding:4px 12px;margin:8px 0 4px}
+      .fp-callout{border:1px solid var(--fp-line);border-left:3px solid var(--fp-emerald);background:var(--fp-emerald-soft);border-radius:12px;padding:15px 18px;margin:20px 0}
+      .fp-callout p{margin:0 0 8px}.fp-callout p:last-child{margin:0}
+      .fp-callout.gold{border-left-color:var(--fp-gold);background:var(--fp-gold-soft)}
+      ul.fp-bul{padding-left:20px}ul.fp-bul li{margin:7px 0}
+      .fp-table-wrap{border:1px solid var(--fp-line);border-radius:var(--fp-radius);overflow:hidden;margin:16px 0;background:var(--fp-card)}
+      table{width:100%;border-collapse:collapse}
+      th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--fp-line)}
+      tr:last-child td{border-bottom:none}
+      th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-muted);font-weight:700;background:rgba(255,255,255,.02)}
+      td{font-size:14px;color:#CBD8D0;line-height:1.6}
+      td:first-child{color:var(--fp-ink);font-weight:600;font-family:var(--fp-mono);font-size:12.5px}
+      code{font-family:var(--fp-mono);font-size:.9em;background:rgba(159,176,168,.12);border:1px solid var(--fp-line);border-radius:6px;padding:1px 6px;overflow-wrap:anywhere}
+      .fp-foot{border-top:1px solid var(--fp-line);max-width:var(--fp-maxw);margin:0 auto;padding:26px clamp(16px,5vw,40px) 52px;color:var(--fp-muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:12px 26px;justify-content:space-between;align-items:center}
+      .fp-foot a{color:var(--fp-muted);font-weight:500}.fp-foot a:hover{color:var(--fp-ink)}
+      .fp-foot-links{display:flex;flex-wrap:wrap;gap:16px}
+      [data-l]{display:none}
+      html[data-lang="zh"] [data-l="zh"],html[data-lang="en"] [data-l="en"]{display:revert}
+      @media (max-width:820px){.fp-nav-links{display:none}
+        table,thead,tbody,tr,th,td{display:block}th{display:none}
+        td{border-bottom:0;padding:4px 16px}td:first-child{padding-top:14px;font-size:13px}
+        tr{border-bottom:1px solid var(--fp-line);padding:8px 0}tr:last-child{border-bottom:none}}
+    </style>
+  </head>
+  <body>
+    <nav class="fp-nav">
+      <a class="fp-brand" href="https://fairpoker.app/"><span class="fp-mark" aria-hidden="true">&#9824;</span>Fair Poker</a>
+      <div class="fp-nav-right">
+        <div class="fp-nav-links">
+          <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
+          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
+          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
+          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全审计</span><span data-l="en">Security Audit</span></a>
+        </div>
+        <div class="fp-langs" id="fp-langs" aria-label="Language">
+          <button type="button" data-set="zh">中文</button>
+          <button type="button" data-set="en">EN</button>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <span class="fp-eyebrow"><span data-l="zh">法律 · Cookies</span><span data-l="en">Legal · Cookies</span></span>
+      <h1><span data-l="zh">Cookie 与本地存储说明</span><span data-l="en">Cookie &amp; Local Storage Policy</span></h1>
+      <p class="fp-lead">
+        <span data-l="zh">Fair Poker 只使用为提供服务所<strong>必需</strong>的本地存储，不使用广告或第三方追踪 Cookie，也不接入跨站行为分析。本页说明我们在你浏览器中存放了什么、为什么，以及如何清除。</span>
+        <span data-l="en">Fair Poker uses only the local storage that is <strong>strictly necessary</strong> to provide the service. We use no advertising or third-party tracking cookies and no cross-site behavioural analytics. This page explains what we store in your browser, why, and how to clear it.</span>
+      </p>
+      <div class="fp-updated"><span data-l="zh">最后更新：2026 年 6 月 27 日</span><span data-l="en">Last updated: 27 June 2026</span></div>
+
+      <div class="fp-callout gold">
+        <p data-l="zh"><strong>要点：</strong>我们几乎不使用传统 Cookie，而是用浏览器的 <code>localStorage</code> 与 <code>sessionStorage</code> 保存必要的偏好与牌局数据。这些数据默认<strong>留在你的设备本地</strong>，由你掌控、可随时清除。因为它们都是严格必需的功能性存储，依 ePrivacy 等规则属于免征同意类别。</p>
+        <p data-l="en"><strong>Summary:</strong> we use almost no traditional cookies. Instead we use the browser's <code>localStorage</code> and <code>sessionStorage</code> for necessary preferences and game data. This data <strong>stays on your device</strong> by default, under your control, and can be cleared anytime. As strictly-necessary functional storage, it falls under the consent-exempt category of rules such as ePrivacy.</p>
+      </div>
+
+      <div data-l="zh">
+        <h2>我们存放什么</h2>
+        <div class="fp-table-wrap">
+          <table>
+            <thead><tr><th>键 / 存储</th><th>用途</th><th>类型与期限</th></tr></thead>
+            <tbody>
+              <tr><td>fairpoker:language</td><td>记住你选择的界面语言。</td><td>localStorage · 功能性 · 持久至清除</td></tr>
+              <tr><td>会话 / session</td><td>维持你的登录会话与牌桌进入状态。</td><td>localStorage · 严格必需 · 至登出或清除</td></tr>
+              <tr><td>账号密钥库</td><td>以你的密码本地加密保存账号身份材料，用于登录与恢复。</td><td>localStorage · 严格必需 · 持久至清除</td></tr>
+              <tr><td>逐卡解密钥 / transcript</td><td>当前牌局的底牌解密钥与可复验证据。</td><td>localStorage/sessionStorage · 严格必需 · 本手结束即清除</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>具体键名可能随版本调整，但用途始终限于上述功能。我们<strong>不</strong>设置广告、再营销或跨站追踪标识。</p>
+
+        <h2>第三方</h2>
+        <p>牌桌连接经由 Cloudflare 中继，客户端经由公共 IPFS 网关分发；这些基础设施可能按其自身政策使用必要的运营性 Cookie 或日志以保障连通与安全。我们不通过它们对你做广告画像。</p>
+
+        <h2>如何管理或清除</h2>
+        <ul class="fp-bul">
+          <li>在浏览器设置中清除"网站数据 / 存储"，即可删除我们在本站存放的全部本地数据；</li>
+          <li>逐卡解密钥仅在当前这一手牌期间暂存于本机，牌局一结束即自动清除；</li>
+          <li>使用隐私/无痕窗口可在会话结束后自动清除本地数据；</li>
+          <li>注意：清除这些必需数据后，你需要重新登录，且可能丢失未导出的本地牌局证据。</li>
+        </ul>
+
+        <h2>变更</h2>
+        <p>我们可能更新本说明。重大变更将通过更新"最后更新"日期公布。与本说明相关的更广泛数据处理，请参阅 <a href="https://fairpoker.app/privacy.html">隐私政策</a>。</p>
+
+        <h2>联系</h2>
+        <p>问题请联系 <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>。</p>
+      </div>
+
+      <div data-l="en">
+        <h2>What we store</h2>
+        <div class="fp-table-wrap">
+          <table>
+            <thead><tr><th>Key / storage</th><th>Purpose</th><th>Type &amp; duration</th></tr></thead>
+            <tbody>
+              <tr><td>fairpoker:language</td><td>Remembers your chosen interface language.</td><td>localStorage · functional · until cleared</td></tr>
+              <tr><td>session</td><td>Maintains your login session and table-entry state.</td><td>localStorage · strictly necessary · until logout or cleared</td></tr>
+              <tr><td>account vault</td><td>Stores account identity material encrypted locally with your password, for login and recovery.</td><td>localStorage · strictly necessary · until cleared</td></tr>
+              <tr><td>per-card keys / transcript</td><td>Hole-card decryption keys and replayable evidence for the current hand.</td><td>localStorage/sessionStorage · strictly necessary · cleared when the hand ends</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Exact key names may change between versions, but their purpose is always limited to the functions above. We set <strong>no</strong> advertising, remarketing, or cross-site tracking identifiers.</p>
+
+        <h2>Third parties</h2>
+        <p>Table connectivity goes through the Cloudflare relay, and the client is distributed via public IPFS gateways. This infrastructure may use necessary operational cookies or logs under its own policies for connectivity and security. We do not use them to build an advertising profile of you.</p>
+
+        <h2>How to manage or clear</h2>
+        <ul class="fp-bul">
+          <li>clear "site data / storage" in your browser settings to delete all local data we store on this site;</li>
+          <li>per-card decryption keys are kept on your device only for the duration of the current hand and are cleared automatically when the hand ends;</li>
+          <li>using a private/incognito window clears local data automatically when the session ends;</li>
+          <li>note: after clearing this necessary data you will need to log in again, and may lose un-exported local hand evidence.</li>
+        </ul>
+
+        <h2>Changes</h2>
+        <p>We may update this policy. Material changes will be announced by updating the "Last updated" date. For broader data processing related to this policy, see the <a href="https://fairpoker.app/privacy.html">Privacy Policy</a>.</p>
+
+        <h2>Contact</h2>
+        <p>For questions, contact <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>.</p>
+      </div>
+    </main>
+
+    <footer class="fp-foot">
+      <div class="fp-foot-links">
+        <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
+        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
+        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
+        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全审计</span><span data-l="en">Security Audit</span></a>
+        <a href="https://fairpoker.app/roadmap.html"><span data-l="zh">路线图</span><span data-l="en">Roadmap</span></a>
+        <a href="https://fairpoker.app/privacy.html"><span data-l="zh">隐私</span><span data-l="en">Privacy</span></a>
+        <a href="https://fairpoker.app/terms.html"><span data-l="zh">条款</span><span data-l="en">Terms</span></a>
+        <a href="https://fairpoker.app/cookies.html">Cookie</a>
+        <a href="https://fairpoker.app/responsible-play.html"><span data-l="zh">负责任游戏</span><span data-l="en">Responsible play</span></a>
+        <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
+      </div>
+      <div><span data-l="zh">仅娱乐筹码 · 非真钱赌博</span><span data-l="en">Play chips only &middot; no real-money gambling</span></div>
+    </footer>
+
+    <script>
+      (function(){
+        var KEY='fairpoker:language';
+        var avail=['zh','en'];
+        function has(l){return avail.indexOf(l)>=0}
+        var cur=null;try{cur=localStorage.getItem(KEY)}catch(e){}
+        if(!cur||!has(cur)) cur='zh';
+        document.documentElement.setAttribute('data-lang',cur);
+        var bar=document.getElementById('fp-langs');
+        if(bar){
+          var btns=bar.querySelectorAll('button');
+          Array.prototype.forEach.call(btns,function(b){
+            var l=b.getAttribute('data-set');
+            b.setAttribute('aria-pressed', l===cur?'true':'false');
+            b.addEventListener('click',function(){
+              document.documentElement.setAttribute('data-lang',l);
+              try{localStorage.setItem(KEY,l)}catch(e){}
+              Array.prototype.forEach.call(btns,function(x){x.setAttribute('aria-pressed', x.getAttribute('data-set')===l?'true':'false')});
+            });
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh" data-lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fair Poker — 公开安全与公平证据状态</title>
+    <meta name="description" content="Fair Poker public evidence status: official source release package, IPFS release CIDs, source SHA256 and fingerprints, signed transcript hash-chains, and local replay verification." />
+    <meta name="theme-color" content="#07130F" />
+    <style>
+      :root{
+        --fp-bg:#07130F;--fp-card:#0F2418;--fp-emerald:#1FA06A;--fp-emerald-soft:rgba(31,160,106,.14);
+        --fp-gold:#E0C06A;--fp-gold-soft:rgba(224,192,106,.12);--fp-ink:#F2EFE6;--fp-muted:#9BB0A4;
+        --fp-body:#D7E2DB;--fp-line:rgba(159,176,168,.16);--fp-radius:14px;--fp-maxw:1040px;
+        --fp-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",system-ui,Arial,sans-serif;
+        --fp-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      }
+      *{box-sizing:border-box}
+      html{color-scheme:dark;scroll-behavior:smooth}
+      body{margin:0;background:var(--fp-bg);color:var(--fp-ink);font-family:var(--fp-sans);line-height:1.72;-webkit-font-smoothing:antialiased}
+      a{color:var(--fp-gold);text-decoration:none;font-weight:600}
+      a:hover{text-decoration:underline}
+      .fp-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px clamp(16px,5vw,40px);background:rgba(7,19,15,.82);backdrop-filter:saturate(140%) blur(12px);-webkit-backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid var(--fp-line)}
+      .fp-brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--fp-ink);font-size:16px}
+      .fp-mark{width:30px;height:30px;border-radius:8px;background:var(--fp-gold);color:#241a06;display:flex;align-items:center;justify-content:center;font-size:17px}
+      .fp-nav-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+      .fp-nav-links{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+      .fp-nav-links a{color:var(--fp-muted);font-weight:500;font-size:14px;padding:7px 11px;border-radius:8px}
+      .fp-nav-links a:hover{color:var(--fp-ink);background:rgba(255,255,255,.05);text-decoration:none}
+      .fp-langs{display:flex;gap:4px}
+      .fp-langs button{font:inherit;font-size:13px;color:var(--fp-muted);background:transparent;border:1px solid var(--fp-line);border-radius:999px;padding:5px 11px;cursor:pointer}
+      .fp-langs button[aria-pressed="true"]{color:#241a06;background:var(--fp-gold);border-color:var(--fp-gold);font-weight:600}
+      main{max-width:var(--fp-maxw);margin:0 auto;padding:clamp(28px,6vw,56px) clamp(16px,5vw,40px) 72px}
+      .fp-eyebrow{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--fp-emerald)}
+      h1{font-size:clamp(32px,6vw,54px);line-height:1.06;letter-spacing:-.02em;margin:14px 0 16px;font-weight:700}
+      h2{font-size:23px;margin:44px 0 12px;font-weight:700;letter-spacing:-.01em}
+      p,li{color:var(--fp-body);font-size:16px}
+      .fp-lead{font-size:18px;color:var(--fp-muted);max-width:64ch;line-height:1.7}
+      .fp-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:24px 0 8px}
+      .fp-stat{background:var(--fp-card);border:1px solid var(--fp-line);border-radius:12px;padding:16px}
+      .fp-stat span{display:block;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fp-muted)}
+      .fp-stat strong{display:block;margin-top:6px;font-size:15px;color:var(--fp-ink)}
+      .fp-callout{border:1px solid var(--fp-line);border-left:3px solid var(--fp-emerald);background:var(--fp-emerald-soft);border-radius:12px;padding:15px 18px;margin:20px 0}
+      .fp-callout p{margin:0}
+      dl.fp-dl{display:grid;grid-template-columns:230px minmax(0,1fr);gap:1px;margin:14px 0;background:var(--fp-line);border:1px solid var(--fp-line);border-radius:12px;overflow:hidden}
+      dl.fp-dl dt{background:var(--fp-card);padding:13px 16px;font-size:12.5px;font-weight:700;color:var(--fp-muted)}
+      dl.fp-dl dd{background:var(--fp-card);padding:13px 16px;margin:0;min-width:0;overflow-wrap:anywhere;font-size:14px;color:#CBD8D0;line-height:1.6}
+      dl.fp-dl code{font-family:var(--fp-mono);font-size:.9em;background:rgba(159,176,168,.12);border:1px solid var(--fp-line);border-radius:6px;padding:1px 6px}
+      .program-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+      .program{display:grid;gap:7px;background:var(--fp-card);border:1px solid var(--fp-line);border-radius:12px;padding:16px 18px}
+      .program span,.program strong,.program small{display:block}
+      .program > span:nth-of-type(2){color:var(--fp-emerald);font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+      .program strong{color:var(--fp-ink);font-size:15.5px}
+      .program p{margin:0;font-size:14px;color:#CBD8D0}
+      .program small{color:var(--fp-muted);font-size:12.5px;line-height:1.5}
+      .program a{justify-self:start;font-size:13px}
+      .program .status{justify-self:start;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.03em;background:rgba(159,176,168,.14);color:var(--fp-muted)}
+      .program[data-status="active"] .status,.program[data-status="continuous"] .status{background:var(--fp-emerald-soft);color:#7FE3B6}
+      .program[data-status="planned"] .status{background:var(--fp-gold-soft);color:var(--fp-gold)}
+      .program[data-status="needs-review"] .status,.program[data-status="unavailable"] .status{background:rgba(226,75,74,.14);color:#F0999B}
+      .fp-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+      .fp-links a{display:block;padding:14px 16px;background:var(--fp-card);border:1px solid var(--fp-line);border-radius:12px;color:var(--fp-ink);font-weight:600;overflow-wrap:anywhere}
+      .fp-links a:hover{border-color:rgba(224,192,106,.5);text-decoration:none}
+      .fp-foot{border-top:1px solid var(--fp-line);max-width:var(--fp-maxw);margin:0 auto;padding:26px clamp(16px,5vw,40px) 52px;color:var(--fp-muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:12px 26px;justify-content:space-between;align-items:center}
+      .fp-foot a{color:var(--fp-muted);font-weight:500}.fp-foot a:hover{color:var(--fp-ink)}
+      .fp-foot-links{display:flex;flex-wrap:wrap;gap:16px}
+      [data-l]{display:none}
+      html[data-lang="zh"] [data-l="zh"],html[data-lang="en"] [data-l="en"]{display:revert}
+      @media (max-width:760px){.fp-stat-grid,.program-grid,.fp-links{grid-template-columns:1fr}dl.fp-dl{grid-template-columns:1fr}.fp-nav-links{display:none}}
+    </style>
+  </head>
+  <body>
+    <nav class="fp-nav">
+      <a class="fp-brand" href="https://fairpoker.app/"><span class="fp-mark" aria-hidden="true">&#9824;</span>Fair Poker</a>
+      <div class="fp-nav-right">
+        <div class="fp-nav-links">
+          <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
+          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
+          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
+          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全审计</span><span data-l="en">Security Audit</span></a>
+        </div>
+        <div class="fp-langs" id="fp-langs" aria-label="Language">
+          <button type="button" data-set="zh">中文</button>
+          <button type="button" data-set="en">EN</button>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <div data-l="zh">
+        <span class="fp-eyebrow">证据状态 · Assurance</span>
+        <h1>公开安全与公平证据状态</h1>
+        <p class="fp-lead">Fair Poker 把可复验材料公开到浏览器可访问的位置：官方源码发布包、IPFS 发布 CID、源码 SHA256 与指纹、签名 hash-chain transcript，以及本地 verifier。</p>
+        <div class="fp-stat-grid">
+          <div class="fp-stat"><span>发牌模型</span><strong>服务器不发牌</strong></div>
+          <div class="fp-stat"><span>发布身份</span><strong>CID · SHA256 · 指纹</strong></div>
+          <div class="fp-stat"><span>机器可读</span><strong>/audit/status.json</strong></div>
+        </div>
+        <div class="fp-callout"><p>本页只列已经公开、可链接、可下载、可复验的材料。核心判断点：运行代码能否与公开发布身份比对、牌局记录能否从 transcript 本地重放、平台中继是否处在发牌信任边界之外。</p></div>
+      </div>
+
+      <div data-l="en">
+        <span class="fp-eyebrow">Assurance</span>
+        <h1>Public security and fairness evidence</h1>
+        <p class="fp-lead">Fair Poker publishes browser-readable evidence for the fairness path: the official source release package, IPFS release CIDs, source SHA256 and fingerprints, signed hash-chain transcripts, and local replay verification.</p>
+        <div class="fp-stat-grid">
+          <div class="fp-stat"><span>Dealing model</span><strong>Server is not the dealer</strong></div>
+          <div class="fp-stat"><span>Release identity</span><strong>CID · SHA256 · fingerprint</strong></div>
+          <div class="fp-stat"><span>Machine-readable</span><strong>/audit/status.json</strong></div>
+        </div>
+        <div class="fp-callout"><p>This page lists only material that is already public, linkable, downloadable, and verifiable. The core test: can the running code be matched to the published release identity, can a hand be replayed locally from its transcript, and is the relay outside the dealing trust boundary.</p></div>
+      </div>
+
+      <section>
+        <h2><span data-l="zh">当前状态</span><span data-l="en">Current status</span></h2>
+        <div id="programs" class="program-grid">
+          <article class="program"><span class="status">…</span><strong data-l="zh">正在读取证据状态…</strong><strong data-l="en">Loading assurance status…</strong><p>/audit/status.json</p></article>
+        </div>
+      </section>
+
+      <div data-l="zh">
+        <h2>公开证据流程</h2>
+        <dl class="fp-dl">
+          <dt>状态生成</dt><dd><code>npm run audit:status</code> 生成 <code>public/audit/status.json</code> 与 <code>src/generated/auditStatus.ts</code>。</dd>
+          <dt>构建前刷新</dt><dd><code>npm run build</code> 通过 <code>prebuild</code> 自动刷新 release metadata 与 audit status。</dd>
+          <dt>依赖扫描</dt><dd><code>npm audit --omit=dev --json</code> 的结果写入公开状态。</dd>
+          <dt>公平复验</dt><dd>source release、IPFS CID、SHA256、指纹与 transcript verifier 共同构成可复验闭环。</dd>
+        </dl>
+        <h2>相关材料</h2>
+        <div class="fp-links">
+          <a href="/audit/status.json">机器可读审计状态</a>
+          <a href="/audit-report.html">完整证据报告</a>
+          <a href="/verify-guide.html">公平复验教程</a>
+          <a href="/security.html">安全与攻击模型</a>
+          <a href="/source/release.json">最新源码发布清单</a>
+          <a href="/ai.json">AI 可读 JSON 摘要</a>
+        </div>
+      </div>
+
+      <div data-l="en">
+        <h2>How the evidence is produced</h2>
+        <dl class="fp-dl">
+          <dt>Status generation</dt><dd><code>npm run audit:status</code> generates <code>public/audit/status.json</code> and <code>src/generated/auditStatus.ts</code>.</dd>
+          <dt>Pre-build refresh</dt><dd><code>npm run build</code> refreshes release metadata and audit status via <code>prebuild</code>.</dd>
+          <dt>Dependency scan</dt><dd>The output of <code>npm audit --omit=dev --json</code> is written into the public status.</dd>
+          <dt>Fairness verification</dt><dd>Source release, IPFS CID, SHA256, fingerprint, and the transcript verifier together form a verifiable loop.</dd>
+        </dl>
+        <h2>Related material</h2>
+        <div class="fp-links">
+          <a href="/audit/status.json">Machine-readable audit status</a>
+          <a href="/audit-report.html">Full evidence report</a>
+          <a href="/verify-guide.html">Verification guide</a>
+          <a href="/security.html">Security and attack model</a>
+          <a href="/source/release.json">Latest source release manifest</a>
+          <a href="/ai.json">AI-readable JSON summary</a>
+        </div>
+      </div>
+    </main>
+
+    <footer class="fp-foot">
+      <div class="fp-foot-links">
+        <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
+        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
+        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
+        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全审计</span><span data-l="en">Security Audit</span></a>
+        <a href="https://fairpoker.app/roadmap.html"><span data-l="zh">路线图</span><span data-l="en">Roadmap</span></a>
+        <a href="https://fairpoker.app/privacy.html"><span data-l="zh">隐私</span><span data-l="en">Privacy</span></a>
+        <a href="https://fairpoker.app/terms.html"><span data-l="zh">条款</span><span data-l="en">Terms</span></a>
+        <a href="https://fairpoker.app/cookies.html">Cookie</a>
+        <a href="https://fairpoker.app/responsible-play.html"><span data-l="zh">负责任游戏</span><span data-l="en">Responsible play</span></a>
+        <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
+      </div>
+      <div><span data-l="zh">仅娱乐筹码 · 非真钱赌博</span><span data-l="en">Play chips only &middot; no real-money gambling</span></div>
+    </footer>
+
+    <script>
+      (function(){
+        var KEY='fairpoker:language';
+        var avail=['zh','en'];
+        function has(l){return avail.indexOf(l)>=0}
+        var cur=null;try{cur=localStorage.getItem(KEY)}catch(e){}
+        if(!cur||!has(cur)) cur='zh';
+        document.documentElement.setAttribute('data-lang',cur);
+        var bar=document.getElementById('fp-langs');
+        if(bar){
+          var btns=bar.querySelectorAll('button');
+          Array.prototype.forEach.call(btns,function(b){
+            var l=b.getAttribute('data-set');
+            b.setAttribute('aria-pressed', l===cur?'true':'false');
+            b.addEventListener('click',function(){
+              document.documentElement.setAttribute('data-lang',l);
+              try{localStorage.setItem(KEY,l)}catch(e){}
+              Array.prototype.forEach.call(btns,function(x){x.setAttribute('aria-pressed', x.getAttribute('data-set')===l?'true':'false')});
+              document.dispatchEvent(new Event('fairpoker:languagechange'));
+            });
+          });
+        }
+      })();
+
+      (function(){
+        var languages=['zh','en','ja','es','fr','de'];
+        var labels={
+          zh:{active:'已公开',continuous:'持续扫描',planned:'计划中','needs-review':'需复核',unavailable:'不可用'},
+          en:{active:'Published',continuous:'Continuous',planned:'Planned','needs-review':'Needs review',unavailable:'Unavailable'},
+          ja:{active:'公開済み',continuous:'継続中',planned:'予定','needs-review':'要確認',unavailable:'利用不可'},
+          es:{active:'Publicado',continuous:'Continuo',planned:'Planificado','needs-review':'Revisar',unavailable:'No disponible'},
+          fr:{active:'Publié',continuous:'Continu',planned:'Prévu','needs-review':'À vérifier',unavailable:'Indisponible'},
+          de:{active:'Veröffentlicht',continuous:'Laufend',planned:'Geplant','needs-review':'Prüfen',unavailable:'Nicht verfügbar'}
+        };
+        var evidenceLinks={zh:'查看证据',en:'View evidence',ja:'証拠を見る',es:'Ver evidencia',fr:'Voir la preuve',de:'Nachweis ansehen'};
+        var fallbackStatus={
+          zh:{title:'审计状态 JSON 不可用',copy:'公开报告页已加载，但暂时无法读取 /audit/status.json。'},
+          en:{title:'Audit status JSON unavailable',copy:'The public report page loaded, but /audit/status.json could not be read.'}
+        };
+        var programCopy={
+          'source-release-evidence':{zh:{category:'公开复现证据',name:'源码发布与 IPFS 证据',evidence:'核心公平源码包、发布清单、SHA256 与 IPFS CID 已公开，可独立复验。'},en:{category:'Reproducible evidence',name:'Source release and IPFS evidence',evidence:'The core fairness source package, release manifest, SHA256, and IPFS CID are public for independent verification.'}},
+          'transcript-verifier':{zh:{category:'玩家可复验公平性',name:'牌局记录本地复验器',evidence:'每局完成后都可以下载 transcript，并在本地重放复验。'},en:{category:'Player-verifiable fairness',name:'Local transcript verifier',evidence:'After each hand you can download the transcript and replay-verify it locally.'}},
+          'live-fairness-audit-overlay':{zh:{category:'公平校验主动告警',name:'每手 4 灯公平校验覆盖层',evidence:'每局结束自动跑 4 项校验：牌堆完整 · 全员参与洗牌 · 记录指纹一致 · 签名齐全。通过盖"已验证"印，异常红灯并提示下载证据。'},en:{category:'Active fairness alerting',name:'Per-hand four-light fairness audit',evidence:'At every hand end the browser auto-runs four checks (deck integrity, all-players shuffled and locked, matching record fingerprint, signatures complete) and surfaces the result on a visual overlay.'}},
+          'browser-authoritative-state':{zh:{category:'平台权力边界',name:'浏览器即权威 · 中继零裁判',evidence:'座位/底池/轮到谁/赢家由每个浏览器用同一套确定性 reducer 从签名事件日志算出，两端读同一份日志必然一致；中继已降为哑中继，不计算任何牌局状态，也没有协议路径把玩家踢出牌局、没收筹码或改写赢家。重连按 sinceSeq 补齐日志后重新算出相同状态。'},en:{category:'Operator power boundary',name:'Browser-authoritative state · dumb relay',evidence:'Seats, pot, turn order and winner are computed by every browser with the same deterministic reducer over the signed event log, so two browsers reading the same log necessarily agree; the relay is a dumb relay that computes no game state and has no protocol path to kick a player, seize chips, or rewrite winners. Reconnect replays missed messages by sinceSeq to complete the log and re-derive the identical state.'}},
+          'end-to-end-card-key-sealing':{zh:{category:'发牌机密性',name:'端到端密封逐卡解密钥',evidence:'每张牌的解密钥用收牌方公钥端到端密封（RSA-OAEP），并绑定 sender / recipient / round / cardOffset；中继全程只看到密文，重定向到错位置会被拒收。'},en:{category:'Dealing confidentiality',name:'End-to-end sealed per-card decrypt keys',evidence:'Per-card decrypt keys are sealed to the recipient public key (RSA-OAEP) and bound to sender / recipient / round / cardOffset; the relay only ever sees ciphertext, and ciphertext redirected to a different position is rejected.'}}
+        };
+        var payload=null, failed=false;
+        function activeLanguage(){
+          try{var s=String(localStorage.getItem('fairpoker:language')||'').toLowerCase().split('-')[0];if(languages.indexOf(s)>=0)return s;}catch(e){}
+          return 'zh';
+        }
+        function textFor(map,l){return (map&&(map[l]||map.en||map.zh))||''}
+        function render(){
+          var l=activeLanguage(), root=document.getElementById('programs');
+          if(!root)return; root.innerHTML='';
+          if(failed){var f=fallbackStatus[l]||fallbackStatus.en;root.innerHTML='<article class="program" data-status="unavailable"><span class="status">'+((labels[l]||labels.en).unavailable)+'</span><strong>'+f.title+'</strong><p>'+f.copy+'</p></article>';return;}
+          if(!payload){root.innerHTML='<article class="program"><span class="status">…</span><strong>'+(l==='zh'?'正在读取证据状态…':'Loading assurance status…')+'</strong><p>/audit/status.json</p></article>';return;}
+          payload.programs.forEach(function(program){
+            var loc=(programCopy[program.id]&&programCopy[program.id][l])||(programCopy[program.id]&&programCopy[program.id].en)||program;
+            var item=document.createElement('article');
+            item.className='program'; item.dataset.status=program.status; item.dataset.programId=program.id;
+            var link=program.reportUrl?'<a href="'+program.reportUrl+'" target="_blank" rel="noreferrer">'+textFor(evidenceLinks,l)+'</a>':'';
+            item.innerHTML='<span class="status">'+(((labels[l]||labels.en)[program.status])||program.status)+'</span><span>'+loc.category+'</span><strong>'+loc.name+'</strong><p>'+loc.evidence+'</p><small>'+program.providers.join(' · ')+'</small>'+link;
+            root.appendChild(item);
+          });
+        }
+        fetch('/audit/status.json').then(function(r){return r.json()}).then(function(s){payload=s;render();}).catch(function(){failed=true;render();});
+        document.addEventListener('fairpoker:languagechange', render);
+      })();
+    </script>
+  </body>
+</html>

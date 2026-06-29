@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#07130F" />
+    <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg" />
+    <meta
+      name="description"
+      content="Fair Poker 是可复验的德州扑克牌桌，支持朋友邀请、浏览器侧牌局证据、IPFS 发布身份、源码指纹、签名牌局记录和本地复验。"
+    />
+    <meta name="keywords" content="fair poker, verifiable poker, texas holdem, mental poker, IPFS, transcript verifier, hash-chain, source audit">
+    <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
+    <meta name="googlebot" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
+    <meta name="bingbot" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
+    <link rel="canonical" href="https://fairpoker.app/">
+    <link rel="alternate" hreflang="x-default" href="https://fairpoker.app/">
+    <link rel="alternate" hreflang="zh" href="https://fairpoker.app/">
+    <link rel="alternate" hreflang="en" href="https://fairpoker.app/">
+    <link rel="alternate" hreflang="ja" href="https://fairpoker.app/">
+    <link rel="alternate" hreflang="es" href="https://fairpoker.app/">
+    <link rel="alternate" hreflang="fr" href="https://fairpoker.app/">
+    <link rel="alternate" hreflang="de" href="https://fairpoker.app/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Fair Poker">
+    <meta property="og:title" content="Fair Poker - 可复验德州扑克">
+    <meta property="og:description" content="可复验的德州扑克牌桌，没有传统发牌服务器或中心化牌局历史数据库；牌局证据优先保留在浏览器侧，并可下载到本地复验。">
+    <meta property="og:url" content="https://fairpoker.app/">
+    <meta property="og:image" content="https://fairpoker.app/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Fair Poker - 可复验德州扑克">
+    <meta name="twitter:description" content="创建体验筹码牌桌、邀请朋友，并用浏览器侧 transcript、CID、源码指纹和本地重放复验牌局。">
+    <meta name="twitter:image" content="https://fairpoker.app/og-image.png">
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- prefetch poker cards -->
+    <link rel="prefetch" href="%PUBLIC_URL%/chip.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/back.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/c2.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/c3.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/c4.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/c5.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/c6.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/c7.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/c8.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/c9.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/ca.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/cj.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/ck.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/cq.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/ct.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/d2.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/d3.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/d4.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/d5.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/d6.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/d7.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/d8.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/d9.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/da.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/dj.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/dk.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/dq.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/dt.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/h2.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/h3.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/h4.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/h5.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/h6.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/h7.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/h8.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/h9.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/ha.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/hj.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/hk.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/hq.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/ht.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/s2.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/s3.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/s4.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/s5.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/s6.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/s7.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/s8.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/s9.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/sa.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/sj.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/sk.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/sq.svg" />
+    <link rel="prefetch" href="%PUBLIC_URL%/cards/st.svg" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Fair Poker",
+        "url": "https://fairpoker.app/",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Web",
+        "description": "Fair Poker 是可复验的德州扑克牌桌，支持体验筹码牌局、朋友邀请、浏览器侧牌局证据、IPFS 发布身份、源码指纹、签名 transcript 和本地复验。",
+        "inLanguage": ["zh", "en", "ja", "es", "fr", "de"],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Fair Poker",
+          "url": "https://fairpoker.app/",
+          "email": "support@fairpoker.app"
+        }
+      }
+    </script>
+    <title>Fair Poker - 可复验德州扑克</title>
+  </head>
+
+  <body>
+    <noscript>
+      Fair Poker 是可复验的德州扑克平台。进入实时牌桌需要 JavaScript；公开审计页面、源码发布和复验教程可以作为静态文档访问。
+    </noscript>
+    <div id="root">
+      <main>
+        <h1>Fair Poker · 可复验德州扑克</h1>
+        <p>
+          Fair Poker 是一张可验证公平的德州扑克牌桌。和朋友用娱乐筹码开局，平台只做中继、不发牌、不开牌、不留中心牌库；每一手都生成可下载、可本地重放复验的签名证据。我们只做能被你亲手验证的承诺。
+        </p>
+
+        <h2>平台权力边界（可在源码里查到）</h2>
+        <ul>
+          <li><strong>官方零裁判、零踢人</strong>：Cloudflare Worker 只为签名消息排序、转发，并报告谁在线——它<strong>不计算座位、回合、轮到谁、赢家或筹码</strong>（这些牌局逻辑已从中继移除，可在源码 <code>buildRoomState</code> 里查到只剩在线状态）。没有任何协议路径把玩家踢出牌局、没收筹码或改写赢家。掉线只会触发自动重连，决定权始终在你的签名行动、共识超时或共识作废。</li>
+          <li><strong>浏览器即唯一权威</strong>：每个浏览器用<strong>同一套确定性 reducer</strong>，从那条签名事件日志算出<strong>全部</strong>牌桌状态（座位 / 底池 / 轮到谁 / 赢家 / 战绩）。两个浏览器读同一份日志，算出的状态必然一致；刷新或瞬时断网回归后，浏览器从日志<strong>重新算出完全相同的状态</strong>——不会把你"瞬移"到观战席，下注也不会两边对不上。战绩本地留存，刷新不丢。</li>
+          <li><strong>中继永远看不到底牌</strong>：私有发牌的逐卡解密钥用收牌方公钥端到端密封（RSA-OAEP），并绑定 sender / recipient / round / cardOffset；重发到任何其它收件人或卡位都会被拒。中继全程只看到密文。</li>
+          <li><strong>解密钥只在本手牌期间暂存</strong>：每张牌的逐卡解密钥仅在你正在进行的这一手牌期间暂存于本机，断线/刷新/关闭后重连能恢复这一手；牌局一结束即删除，不长期保留。</li>
+        </ul>
+
+        <h2>每一局都自带证据</h2>
+        <ul>
+          <li><strong>每手 4 灯公平校验</strong>：每局结束自动跑 4 项校验——牌堆完整 · 全员参与洗牌 · 记录指纹一致 · 签名齐全。通过亮"已验证"印，异常红灯并提示下载证据。</li>
+          <li><strong>每手签名 hash-chain transcript</strong>：事件顺序、签名、下注、奖池、公共牌、摊牌全部进入哈希链，可下载、可本地 verifier 重放复验。</li>
+          <li><strong>客户端 CID 实时校验</strong>：浏览器运行时从 ai.json 拉权威 CID，与当前页面 CID 比对，安全面板显示「已锁定 / 不符 / 未固定」。</li>
+          <li><strong>每事件签名 + 默认拒收未签名</strong>：GameRoom 默认 rejectUnsignedEvents = true；签名绑定 tableId，跨桌重放被拒；每会话绑定 sessionNonce 防同会话重放/乱序。</li>
+          <li><strong>验证器与现场算账逐分一致</strong>：可下载的离线验证器和现场用的是同一套规则算筹码结果——弃牌结束与摊牌（含边池/比牌赢家）两条路径都有 CI 测试逐分对齐，二者永远不会悄悄分叉。</li>
+          <li><strong>桌面控制按钮越权可追责</strong>：协议层动不了你的筹码或牌（那些必须本人签名）；若有人非房主擅自改设置 / 重开报名，离线验证器会在可复验记录里标注出来、追责到具体签名者。</li>
+        </ul>
+
+        <h2>已堵上的漏洞</h2>
+        <ul>
+          <li><strong>密码永不出本机</strong>：登录改发浏览器派生的 authSecret，服务端只存其哈希，永远不接触明文密码；密钥库用密码派生密钥本地加密，密文上传，永不解密。</li>
+          <li><strong>中继 token 出 URL</strong>：鉴权 token 改走 WebSocket 子协议，不再进代理、CDN 或访问日志（同时兼容 Chrome 149+ 强制 echo 握手）。</li>
+          <li><strong>1024 位 SRA 加密 + 二次剩余编码</strong>：发牌加密用 1024 位 mental-poker 参数（2048 位模数），并设 2048 位上限防超大参数卡死全场；牌面编码成二次剩余，连"残差指纹"也不泄露——任何人（含运营方）零钥匙都推断不出隐藏的底牌。</li>
+          <li><strong>牌堆做手脚当场作废</strong>：开牌时一旦发现同一张牌出现两次（合法 52 张牌绝不可能），即判定牌堆被篡改，自动作废该手、退还筹码——做手脚的牌堆根本无法被打出来。</li>
+          <li><strong>断线规则简化到极简</strong>：可恢复掉线 → 无损自动恢复；真正离开 → 本手作废、全额退还、整桌结束建议换桌——没有罚款、没有"操作员代踢"。</li>
+          <li><strong>auto-reconnect + 消息重放</strong>：WS 断开 500ms→10s 指数退避自动重连，重连后按 sinceSeq 重放，状态不丢。</li>
+          <li><strong>事件全部严格 schema 校验</strong>：下注 / 弃牌 / 设置 / 牌堆 / 密钥进状态机前结构校验，畸形 / 越界 / 非整数下注被拒，关闭异常输入造成的状态污染和拒绝服务面。</li>
+          <li><strong>verifier 覆盖全部事件类型</strong>：离线 transcript 验证器不再静默跳过任何类型；摊牌阶段重复明文检查、按签名重建 finalHash。</li>
+          <li><strong>source fingerprint 覆盖完整信任边界</strong>：指纹不再只覆盖发牌核心，还包含认证 / 传输 / 启动 / 身份相关文件。</li>
+        </ul>
+
+        <h2>官方证据资源</h2>
+        <ul>
+          <li><a href="https://fairpoker.app/audit-report.html">公平证据报告</a></li>
+          <li><a href="https://fairpoker.app/independent-assurance.html">公开证据状态</a></li>
+          <li><a href="https://fairpoker.app/audit/status.json">机器可读证据状态</a></li>
+          <li><a href="https://fairpoker.app/verify-guide.html">公平复验教程</a></li>
+          <li><a href="https://fairpoker.app/security.html">安全与攻击模型</a></li>
+          <li><a href="https://fairpoker.app/roadmap.html">已加固内容与已知差距（诚实披露）</a></li>
+          <li><a href="https://fairpoker.app/source/release.json">最新源码发布清单</a></li>
+          <li><a href="https://fairpoker.app/ai.json">AI 可读 JSON 摘要</a></li>
+          <li><a href="https://fairpoker.app/llms.txt">AI 可读站点摘要</a></li>
+          <li><a href="https://fairpoker.app/ai-index.html">AI / 爬虫全站合订本（单页含所有公开页面）</a></li>
+        </ul>
+
+        <h2>权威发布身份</h2>
+        <p>
+          权威发布身份以 <a href="https://fairpoker.app/source/release.json">source/release.json</a>
+          和 <a href="https://fairpoker.app/ai.json">ai.json</a> 中的当前组合为准：牌局客户端 CID、源码包 CID、压缩包 SHA256 和源码指纹。如果缓存页面、镜像或第三方摘要显示不同组合，应视为过期副本，并回到权威发布文件比对。
+        </p>
+
+        <h2>诚实边界</h2>
+        <p>
+          以上封的是"官方单方作弊"路径。线下串通、屏幕共享、可验证洗牌零知识证明、完整 OPAQUE / SRP 抗离线爆破属于已知差距，如实列在
+          <a href="https://fairpoker.app/roadmap.html">路线图</a>，不用绝对化措辞掩盖。
+        </p>
+
+        <h2>联系我们</h2>
+        <p>支持、Bug 提交、安全线索和授权事务：<a href="mailto:support@fairpoker.app">support@fairpoker.app</a></p>
+      </main>
+    </div>
+  </body>
+</html>

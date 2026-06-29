@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Fair Poker">
+  <defs>
+    <linearGradient id="fp-fav-gold" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EBCE82"/>
+      <stop offset="1" stop-color="#D2AC52"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#fp-fav-gold)"/>
+  <path d="M32 12 C 27 21, 14 27, 14 37 C 14 44, 21 47, 27 43 C 26 48, 23 52, 19 54 L 45 54 C 41 52, 38 48, 37 43 C 43 47, 50 44, 50 37 C 50 27, 37 21, 32 12 Z" fill="#0A1A12"/>
+</svg>

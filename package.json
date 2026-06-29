@@ -14,7 +14,7 @@
     "peerjs": "^1.5.4",
     "phe": "^0.6.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^19.2.7"
   },
   "scripts": {
     "generate:release-metadata": "node scripts/generate-release-metadata.js",

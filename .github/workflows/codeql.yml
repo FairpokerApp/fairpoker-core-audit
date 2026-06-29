@@ -4,6 +4,13 @@ name: CodeQL Security Scanning
 # Runs on every push / PR to main and weekly, and reports findings under the
 # repository "Security" tab. JavaScript/TypeScript is analysed directly from
 # source, so no build step (and no build secrets) are required.
+#
+# Scope: the shipped browser client code under src/ — the fairness, crypto,
+# transport and UI that actually runs in a player's browser. Local-only build
+# and release tooling (scripts/) is excluded: it runs on the maintainer's own
+# machine over trusted input and is not a player-reachable attack surface.
+# Queries are limited to the security suite (not security-and-quality) so the
+# results are vulnerabilities, not style/quality lint.
 
 on:
   workflow_dispatch:
@@ -29,7 +36,10 @@ jobs:
       - uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript
-          queries: security-extended,security-and-quality
+          queries: security-extended
+          config: |
+            paths:
+              - src
       - uses: github/codeql-action/analyze@v3
         with:
           category: '/language:javascript-typescript'

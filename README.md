@@ -3,7 +3,6 @@
 Official domain: [fairpoker.app](https://fairpoker.app)
 
 [![Snyk security](https://snyk.io/test/github/FairpokerApp/fairpoker-core-audit/badge.svg)](https://snyk.io/test/github/FairpokerApp/fairpoker-core-audit)
-[![CodeQL](https://github.com/FairpokerApp/fairpoker-core-audit/actions/workflows/codeql.yml/badge.svg)](https://github.com/FairpokerApp/fairpoker-core-audit/actions/workflows/codeql.yml)
 
 Fair Poker is a browser-based Texas Hold'em platform focused on verifiable,
 server-not-dealer fairness. Player browsers co-create the encrypted deck, the

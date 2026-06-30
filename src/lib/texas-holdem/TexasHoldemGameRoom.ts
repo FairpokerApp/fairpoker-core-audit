@@ -96,6 +96,11 @@ export interface MentalPokerGameRoomLike {
   // moment it resolves.
   hasIndividualKeysForRound?: (round: number) => boolean;
   wipeRoundSecrets?: (round: number) => void;
+  // True once the round's encrypted shuffle finished (its deck resolved) so cards can be
+  // dealt. False while shuffling — including the permanent-false state a mid-shuffle
+  // refresh leaves behind. Lets the stall watchdog cover the deal phase, not just the
+  // board reveal. (Test doubles omit it; treated as ready when absent.)
+  isDeckReadyForRound?: (round: number) => boolean;
 }
 
 export interface TexasHoldemRoundSettings {
@@ -1219,6 +1224,13 @@ export class TexasHoldemGameRoom {
     this.emitWhoseTurn(e.round, roundData, playerNextToBb, {
       callAmount: e.players.length === 2 ? bigBlindAmount - smallBlindAmount : bigBlindAmount,
     }, replay);
+
+    // Arm the stall watchdog for the DEAL phase too. Until the encrypted shuffle finishes
+    // (deck ready) no hole card can be dealt, so a shuffle interrupted by a refresh would
+    // otherwise freeze here with nothing watching it. pokeCryptoProgress now treats "deck
+    // not ready" as a pending reveal, so this arms the watchdog; a deck that resolves
+    // normally (every healthy hand) disarms it the moment the first card decrypts.
+    this.pokeCryptoProgress(e.round, roundData);
   }
 
   private handleUpdateSettingsEvent(e: UpdateSettingsEvent) {
@@ -1696,7 +1708,12 @@ export class TexasHoldemGameRoom {
     }
     const needed = this.visibleBoardCountForStage(roundData.stage);
     const boardComplete = (this.boardByRound.get(round)?.length ?? 0) >= needed;
-    const revealPending = !boardComplete || roundData.showdownReady;
+    // The deal phase counts as a pending reveal: until the encrypted shuffle finishes the
+    // deck is not ready and no card can be dealt, so an interrupted shuffle must be watched
+    // exactly like a stuck board reveal. A healthy deck resolves in well under the stall
+    // window, so this never fires on a normal hand.
+    const deckReady = this.mentalPokerGameRoom.isDeckReadyForRound?.(round) ?? true;
+    const revealPending = !boardComplete || roundData.showdownReady || !deckReady;
     if (!revealPending) {
       return;
     }
@@ -1716,6 +1733,23 @@ export class TexasHoldemGameRoom {
   // and a hand that resolved or progressed never reaches here.
   private async handleCryptoStall(round: number, roundData: TexasHoldemRound) {
     if (roundData.result || this.activeEventReplay) {
+      return;
+    }
+    // Deal phase stalled: the encrypted shuffle never finished — the deck is still not
+    // ready CRYPTO_STALL_MS after the hand started. This is the mid-shuffle-refresh
+    // deadlock: a refresh interrupted the shuffle, its partial events are skipped on
+    // replay, and no deck/finalized is ever produced, so the deck can never resolve and
+    // no card can be dealt. The hand is objectively unfinishable, so declare it — the
+    // table voids and re-deals cleanly instead of freezing forever. Only a participant
+    // declares; board-reveal stalls fall through to the existing logic below.
+    const deckReady = this.mentalPokerGameRoom.isDeckReadyForRound?.(round) ?? true;
+    if (!deckReady) {
+      const myId = await this.gameRoom.peerIdAsync;
+      const dealtPlayers = this.playersByRound.get(round) ?? await roundData.playersOrdered.promise;
+      if (dealtPlayers.includes(myId)) {
+        console.warn(`Deal stalled for round ${round}; declaring cannotContinue (encrypted shuffle never finished — interrupted by a refresh).`);
+        await this.declareCannotContinue(round);
+      }
       return;
     }
     const needed = this.visibleBoardCountForStage(roundData.stage);
@@ -1822,6 +1856,26 @@ export class TexasHoldemGameRoom {
     // every chip back through the refund. Treat it as an ordinary fold instead: the
     // board can still be revealed (the folder keeps its keys), so the hand finishes
     // normally and the loss stands, while genuine disconnect recovery is untouched.
+    // The deal phase has no real wager on the line — only the blinds — and no hole cards
+    // exist yet. A cannotContinue while the deck is NOT ready means the deal could never
+    // complete (e.g. a refresh interrupted the encrypted shuffle, so the deck never
+    // resolved). Void it, never treat it as a fold: "folding" is meaningless with no cards,
+    // and with nothing but the symmetric blinds in there is no losing hand to dodge (the V8
+    // anti-dodge fold guards only the post-deal phase, where the deck IS ready). Sit out
+    // only players who actually disconnected; if everyone is still connected NOBODY sits out
+    // and both keep playing the re-dealt hand — sitting out the declarer would wrongly drop
+    // a present player and could leave too few to re-deal. The reducer's resolvePendingVoids
+    // uses the same deck-ready test (rebuilt from the signed deck/finalized event) so engine
+    // and reducer reach an identical result.
+    const deckReady = this.mentalPokerGameRoom.isDeckReadyForRound?.(e.round) ?? true;
+    if (!deckReady) {
+      const dealMissing = disconnected;
+      dealMissing.forEach(player => roundData.disconnectedPlayers.add(player));
+      roundData.pausedMissingPlayers = dealMissing;
+      const dealApprovals = players.filter(player => !dealMissing.includes(player));
+      this.voidHand(e.round, roundData, dealApprovals);
+      return;
+    }
     if (disconnected.length === 0 && roundData.pausedMissingPlayers.length === 0) {
       await this.handleFold(e.round, who, replay);
       return;

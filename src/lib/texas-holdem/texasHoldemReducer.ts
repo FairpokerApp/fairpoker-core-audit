@@ -63,6 +63,16 @@ export interface ReducedRound {
   showdownReady: boolean;
   voidApprovals: Set<string>; // dealt-in players who signed an approving voidHandVote (E-1)
   cannotContinue: Set<string>; // dealt-in players who declared the hand unfinishable (E-1)
+  // True once the encrypted shuffle finished and hole cards can be dealt — rebuilt purely
+  // from the signed `deck/finalized` event in the shared log (the same event the engine's
+  // MentalPokerGameRoom resolves its deck on). False during the deal phase, INCLUDING the
+  // permanent-false state a mid-shuffle refresh leaves behind (the partial shuffle is skipped
+  // on replay and no deck/finalized is ever produced). A cannotContinue while this is false is
+  // voided rather than treated as an anti-dodge fold: with no hole cards and only the
+  // symmetric blinds in, there is no losing hand to dodge. Once the deck IS ready the V8
+  // anti-dodge fold applies unchanged, so a player can't dodge a dealt hand. (See
+  // resolvePendingVoids — and the engine's handleCannotContinueEvent uses the same test.)
+  deckReady: boolean;
   result?: WinningResult;
 }
 
@@ -159,7 +169,12 @@ export interface ReducerEvent {
     | 'action/voidHandVote'
     | 'action/cannotContinue'
     | 'action/takeSeat'
-    | 'hand/result';
+    | 'hand/result'
+    // Mental-poker shuffle-completion marker. The reducer ignores its (large) deck payload and
+    // funds entirely — it only records that the deck became ready for the round, so a
+    // deal-phase cannotContinue (deck never finalized, e.g. a mid-shuffle refresh) is voided
+    // while a post-deal one is the V8 anti-dodge fold. (See ReducedRound.deckReady.)
+    | 'deck/finalized';
   from?: string; // signed sender
   round?: number | null;
   amount?: number;
@@ -319,6 +334,7 @@ function applyNewRound(state: ReducedTableState, event: ReducerEvent): void {
     showdownReady: false,
     voidApprovals: new Set(),
     cannotContinue: new Set(),
+    deckReady: false,
   };
   state.rounds.set(event.round, round);
   state.currentRound = event.round;
@@ -556,8 +572,18 @@ function resolvePendingVoids(state: ReducedTableState, connected: Set<string>): 
     if (round.cannotContinue.size > 0) {
       if (missing.length > 0) {
         refundVoid(state, round, dealtIn.filter(p => !missing.includes(p)), missing);
+      } else if (!round.deckReady) {
+        // Deal phase (the deck never finalized — the encrypted shuffle was interrupted, e.g. a
+        // mid-shuffle refresh): the hand can never be dealt, so VOID and refund rather than
+        // fold. With no hole cards and only the symmetric blinds committed there is no losing
+        // hand to dodge, so the V8 anti-dodge fold does not apply; voiding means neither side
+        // wins or loses the blinds over a broken deal, and the table re-deals cleanly instead
+        // of freezing. (Matches the engine's handleCannotContinueEvent, which voids the same
+        // deal-phase case using the same deck-ready test.)
+        refundVoid(state, round, dealtIn, []);
       } else {
-        // Fully connected "I can't continue" = anti-dodge: the declarer simply folds.
+        // Fully connected "I can't continue" after voluntary action = anti-dodge: the
+        // declarer simply folds, so chips can't be clawed back by abandoning a live hand.
         for (const declarer of Array.from(round.cannotContinue)) {
           if (round.result) break;
           if (dealtIn.includes(declarer) && !round.folded.has(declarer)) {
@@ -704,6 +730,18 @@ function applyEvent(state: ReducedTableState, event: ReducerEvent): void {
       // is now a no-op; the resolution paths already manage handInProgress.
       return;
     }
+    case 'deck/finalized': {
+      // The encrypted shuffle finished for this round, so hole cards can now be dealt. Record
+      // deck-ready and nothing else — funds, pot and turn order are untouched. This is the
+      // signal that flips a deal-phase cannotContinue (void) into a post-deal one (V8 anti-
+      // dodge fold) in resolvePendingVoids. It is a public signed event in the shared log, so
+      // it can't be forged away — a hand whose shuffle was interrupted (mid-shuffle refresh)
+      // never produces it, leaving deckReady false and the cannotContinue correctly voided.
+      if (typeof event.round !== 'number') return;
+      const round = state.rounds.get(event.round);
+      if (round) round.deckReady = true;
+      return;
+    }
   }
 }
 
@@ -711,6 +749,10 @@ const REDUCER_EVENT_TYPES = new Set<ReducerEvent['type']>([
   'newRound', 'action/bet', 'action/fold', 'action/autoFold',
   'action/sitOut', 'action/returnToTable', 'action/openRegistration',
   'action/voidHandVote', 'action/cannotContinue', 'action/takeSeat', 'hand/result',
+  // deck/finalized rides the SAME shared signed log as the table events (one gameRoom for
+  // both layers; see setup.ts), so the reducer sees it and records deck-ready. Its big deck
+  // payload is dropped here — transcriptToReducerEvents only copies fixed scalar fields.
+  'deck/finalized',
 ]);
 
 // Map the recorded transcript (the ordered signed log the relay sequences) into the

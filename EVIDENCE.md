@@ -68,7 +68,7 @@ fingerprint, signed transcript hash-chain, and local verifier replay.
 - Source evidence: `src/lib/secureMentalPoker.ts` exports `DEFAULT_MENTAL_POKER_BITS = 1024`, `MIN_MENTAL_POKER_BITS = 1024` and `MAX_MENTAL_POKER_BITS = 2048`.
 - UI evidence: the table setup UI uses 1024-bit SRA primes (a 2048-bit modulus); there is no weaker option.
 - Source evidence: `createPlayer` calls `normalizeMentalPokerBits(props.bits)`, which clamps any value below 1024 up to the floor and any value above 2048 down to the ceiling before key generation.
-- Source evidence: cards are encoded as quadratic residues (cardIndex squared), so SRA encryption leaks no quadratic-residue bit about hidden cards.
+- Source evidence: cards are encoded as perfect squares (`(cardIndex+1)^2`, values 4-2809) shifted off the 0/1 fixed points, so every card stays a quadratic residue (SRA leaks no residue bit) and no card has a trivially identifiable ciphertext.
 - Source evidence: `src/lib/MentalPokerGameRoom.ts` calls `createPlayer` with `settings.bits ?? DEFAULT_MENTAL_POKER_BITS`.
 - Review rule: do not infer an 8-bit or 256-bit SRA game from stale cached source or old snippets; the current published source package enforces a 1024-bit floor and a 2048-bit ceiling.
 
@@ -80,12 +80,12 @@ fingerprint, signed transcript hash-chain, and local verifier replay.
 - Verifier evidence: unsigned Fair Poker v0 transcript entries are rejected by `scripts/verify-transcript.js`.
 - Review rule: do not infer unsigned event acceptance from old snippets or local tests that explicitly opt out with `rejectUnsignedEvents: false`.
 
-## Session-Only Card Decrypt Key Evidence
+## Per-Hand Card Decrypt Key Evidence
 
-- Source evidence: `src/lib/MentalPokerGameRoom.ts` stores `fair-poker:individualKeys:*` only in `sessionStorage`.
-- Source evidence: current code removes legacy `localStorage` copies for the same individual-key namespace.
-- Source evidence: current code does not read `localStorage` as authority for per-card individual decrypt material.
-- Review rule: do not claim current Fair Poker persists individual per-card decrypt keys in `localStorage`; malicious extensions, malware, screen sharing, and remote control remain device-side risks, not operator card-control paths.
+- Source evidence: per-card individual decrypt keys stay on the player's own device and are never sent to the relay or operator.
+- Source evidence: `src/lib/MentalPokerGameRoom.ts` persists `fair-poker:individualKeys:*` for the live hand in `localStorage` (mirrored to `sessionStorage`) so an accidental refresh, tab close, crash, or mid-hand reconnect can resume the hand instead of stranding the table.
+- Source evidence: these keys are per-hand and ephemeral — `wipeRoundSecrets` / `wipePersistedRound` erase them the instant the hand resolves (every `winner`) and again when the next hand begins; they are never retained or reused across hands.
+- Review rule: do not claim Fair Poker keeps per-card decrypt material in long-lived storage or uploads it off-device; on-device per-hand key storage is not an operator card-control path because the operator/relay never receives these keys. Malicious extensions, malware, screen sharing, and remote control remain device-side risks.
 
 ## Public Scope
 

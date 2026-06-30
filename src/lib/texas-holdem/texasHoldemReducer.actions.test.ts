@@ -46,3 +46,41 @@ test('chips reset to nothing when a new street begins (per-street, not cumulativ
   expect(a.has('p1')).toBe(false);
   expect(a.has('p2')).toBe(false);
 });
+
+test('deal-phase cannotContinue (deck never finalized — mid-shuffle refresh) VOIDS and refunds the blinds', () => {
+  // The encrypted shuffle was interrupted (e.g. a page refresh mid-shuffle): no deck/finalized
+  // ever lands, so the deck can never become ready and no hole card can be dealt. A
+  // cannotContinue in this deal phase must VOID the hand and refund the forced blinds — never
+  // fold someone — so neither side wins or loses chips over a broken deal and the table can
+  // re-deal cleanly. Both players are still connected.
+  const state = reduceTexasHoldem(
+    [newRound, { type: 'action/cannotContinue', from: 'p2', round: 1 }],
+    new Map(),
+    ['p1', 'p2'],
+  );
+  const round = state.rounds.get(1)!;
+  expect(round.result?.how).toBe('Voided');
+  // Blinds (SB 1, BB 2) fully refunded → both back to the bought-in 100.
+  expect(state.funds.get('p1')).toBe(100);
+  expect(state.funds.get('p2')).toBe(100);
+});
+
+test('post-deal cannotContinue (deck finalized) is the V8 anti-dodge FOLD, not a void', () => {
+  // Once deck/finalized lands the deck is ready and hole cards exist, so a fully-connected
+  // cannotContinue is a dodge attempt — it must fold the declarer (so the loss can stand),
+  // exactly as before this fix. Voiding here would let a player claw back a dealt hand.
+  const state = reduceTexasHoldem(
+    [
+      newRound,
+      { type: 'deck/finalized', from: 'p1', round: 1 },
+      { type: 'action/cannotContinue', from: 'p2', round: 1 },
+    ],
+    new Map(),
+    ['p1', 'p2'],
+  );
+  const round = state.rounds.get(1)!;
+  expect(round.result?.how).not.toBe('Voided');
+  expect(round.folded.has('p2')).toBe(true);
+  // p2 folded → p1 takes the pot (the loss stands, no claw-back).
+  expect(round.result?.how).toBe('LastOneWins');
+});

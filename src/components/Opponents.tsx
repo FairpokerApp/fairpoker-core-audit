@@ -133,6 +133,9 @@ export default function Opponents(props: {
     onTakeSeat,
     currentRoundFinished,
     actionsDone,
+    // Reserved for the opponent auto-fold countdown UI (not wired up yet). Kept destructured
+    // so it's ready to use; silence the unused-var lint so the CI build doesn't fail.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     autoFoldTimeoutSeconds,
     roomState,
   } = props;

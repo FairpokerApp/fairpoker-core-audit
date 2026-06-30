@@ -340,6 +340,13 @@ class MentalPokerRound {
   players: Map<string, Deferred<Player | null>> = new Map();
   sharedPublicKey: Deferred<PublicKey> = new Deferred();
   deck: Deferred<EncodedDeck> = new Deferred();
+  // True once `deck` has resolved — i.e. the encrypted shuffle finished and cards can
+  // be dealt. A page refresh in the MIDDLE of the shuffle leaves this false forever:
+  // the partial shuffle/lock events are skipped on replay and no deck/finalized is ever
+  // produced, so `deck` never resolves. That is exactly the mid-shuffle-refresh deadlock
+  // — the deal can never complete. Exposed via isDeckReadyForRound so the Texas Hold'em
+  // stall watchdog can also cover the deal phase, not just the board reveal.
+  deckReady = false;
   decryptionKeys: Array<Map<string, Deferred<DecryptionKey>>> = new Array(CARDS).fill({}).map(() => new Map());
   individualKeys: Map<string, Map<number, DecryptionKey>> = new Map();
 
@@ -515,6 +522,16 @@ export default class MentalPokerGameRoom {
     return loadIndividualKeys(this.storageScope, round, me).size > 0;
   }
 
+  // True once round `round`'s encrypted shuffle has finished (its deck resolved) so cards
+  // can actually be dealt. False during the shuffle — including the PERMANENT-false state
+  // a mid-shuffle refresh leaves behind (the partial shuffle is skipped on replay and no
+  // deck/finalized is ever produced, so the deck never resolves). The Texas Hold'em stall
+  // watchdog uses this to detect a deal that can never complete and void the hand cleanly
+  // instead of freezing the table forever.
+  isDeckReadyForRound(round: number): boolean {
+    return this.dataByRounds.get(round)?.deckReady ?? false;
+  }
+
   get members() {
     return this.gameRoom.members;
   }
@@ -568,6 +585,7 @@ export default class MentalPokerGameRoom {
       });
     });
     newRoundData.deck.promise.then(() => {
+      newRoundData.deckReady = true;
       this.emitter.emit('shuffled');
     });
 

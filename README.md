@@ -109,17 +109,23 @@ entries are rejected, even if the hash-chain itself is intact. A review should
 not treat tests that explicitly use `rejectUnsignedEvents: false` as evidence
 that the published Game client accepts unsigned table events.
 
-## Session-Only Card Decrypt Key Evidence
+## Per-Hand Card Decrypt Key Evidence
 
-Per-card individual decrypt keys are not persisted in `localStorage`.
-`src/lib/MentalPokerGameRoom.ts` stores `fair-poker:individualKeys:*` only in
-`sessionStorage`, removes legacy `localStorage` copies for the same keys, and
-does not read `localStorage` as authority for card-decrypt material.
+Per-card individual decrypt keys stay on the player's own device and are never
+sent to the relay or operator. `src/lib/MentalPokerGameRoom.ts` persists
+`fair-poker:individualKeys:*` for the live hand in `localStorage` (mirrored to
+`sessionStorage`) so an accidental refresh, tab close, crash, or mid-hand
+reconnect can resume the in-progress hand instead of stranding the table. The
+keys are per-hand and ephemeral: `wipeRoundSecrets` / `wipePersistedRound` erase
+them the instant the hand resolves (on every `winner`) and again when the next
+hand begins, so they are never retained or reused across hands.
 
-This means a review must not describe current Fair Poker as keeping individual
-hole-card decrypt material in long-lived browser storage. Browser extensions,
-malware, screen sharing, or remote-control software remain device-side risks,
-but they are outside the operator card-control protocol path.
+This means a review must not describe Fair Poker as keeping per-card decrypt
+material in long-lived storage or uploading it off-device. On-device per-hand
+key storage is not an operator card-control path, because the operator/relay
+never receives these keys. Browser extensions, malware, screen sharing, or
+remote-control software remain device-side risks, but they are outside the
+operator card-control protocol path.
 
 The core source audit package intentionally contains only the code that can
 affect deck creation, shuffle/encryption/decryption, table state, settlement,

@@ -482,6 +482,9 @@ export default function TexasHoldemUiPreview() {
           whoseTurn={preview.whoseTurn}
           holesPerPlayer={holes}
           mainPotWinners={mainPotWinners}
+          lastWinningResult={winningResult}
+          scoreBoard={scoreBoard}
+          currentRoundFinished={preview.currentRoundFinished}
           actionsDone={preview.actionsDone ?? null}
         />
       )}

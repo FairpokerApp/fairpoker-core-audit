@@ -100,6 +100,7 @@
             <thead><tr><th>能力</th><th>说明</th></tr></thead>
             <tbody>
               <tr><td>官方零裁判 · 零踢人 ✓</td><td>协议层没有"操作员踢人"事件类型，也没有中心化裁判。中继已降为哑中继：只排序、转发、报告谁在线，<strong>不计算座位 / 回合 / 赢家 / 筹码</strong>。下注 / 弃牌 / 坐离均需玩家本人签名行动；无法继续时走全员共识作废+全额退还。中继切断 WebSocket 只触发客户端指数退避自动重连，不能改变牌局状态或夺座位、筹码。</td></tr>
+              <tr><td>超时弃牌改"自我授权" ✓</td><td>想牌超时只会被你<strong>自己的客户端</strong>判弃牌（按本机时钟），或在你<strong>确已掉线</strong>时由他人替你弃牌以免卡桌；记分员<strong>不再用中继盖的时间戳</strong>判断超时。这样即便中继与某个座位合谋，也无法伪造一个"假超时"把正轮到、还没超时的对手强制盖牌、吞掉争议池——动钱的弃牌只认本人签名或客观掉线，碰不到在场对手。</td></tr>
               <tr><td>浏览器即权威 · 刷新不掉桌 ✓</td><td>座位 / 底池 / 轮到谁 / 赢家 / 战绩全部由你的浏览器用<strong>同一套确定性 reducer</strong> 从签名事件日志算出，不依赖中继的房间状态——两个浏览器读同一份日志必然算出一致结果。重连后按 sinceSeq 重放未读消息把日志补齐，再从日志重新算出完全相同的状态；轮到你时回归直接续上 turn，不再被错误归类为"观战中 / 请重新坐下"，下注也不会两边对不上。战绩本地留存，刷新不丢。</td></tr>
               <tr><td>每手 4 灯公平校验 ✓</td><td>每局结束自动跑 4 项校验（牌堆完整 · 全员参与洗牌 · 记录指纹一致 · 签名齐全）并以覆盖层显示结果，通过盖"已验证"印，异常红灯并提示下载证据——主动告警层，可疑事件不需要玩家自己查 transcript。</td></tr>
               <tr><td>断线规则极简 · 自愈或整桌作废 ✓</td><td>固定两条规则：可恢复掉线 → 无损自动恢复；密钥不可达 → 本手作废、全额退还、整桌结束建议换桌。没有"罚款 / 没收 / 操作员代踢"开关。建桌页与入场页都展示规则面板。</td></tr>
@@ -114,7 +115,7 @@
               <tr><td>牌堆 / 密钥结构校验 ✓</td><td>牌堆须为 52 个合法整数密文，逐卡密钥与公钥须合法且长度受限，防止超大数解析造成的拒绝服务。</td></tr>
               <tr><td>验证器事件覆盖 ✓</td><td>离线 transcript 验证器现已识别并校验全部桌面事件类型，不再静默跳过。</td></tr>
               <tr><td>会话域分离与重放检测 ✓</td><td>每个签名会话绑定随机 sessionNonce；离线验证器据此检测同一会话内的序号重放与乱序。</td></tr>
-              <tr><td>密钥强度下限 ✓</td><td>mental-poker SRA 位数下限提升至 1024（2048 位模数，离散对数不可行），并设 2048 位上限——弱参数自动上调、超大参数被夹住，同时消除"极小位数崩溃"与"超大位数卡死"两种拒绝服务；牌面还编码成二次剩余，连残差指纹也不泄露隐藏牌。</td></tr>
+              <tr><td>密钥强度下限 ✓</td><td>mental-poker SRA 位数下限提升至 1024（2048 位模数，离散对数不可行），并设 2048 位上限——弱参数自动上调、超大参数被夹住，同时消除"极小位数崩溃"与"超大位数卡死"两种拒绝服务；牌面还编码成二次剩余<strong>并避开 0/1 不动点</strong>（否则编码落在"1"的那张牌密文会恒为"1"、被零钥匙一眼认出），连残差指纹也不泄露任何隐藏牌。</td></tr>
               <tr><td>每手统一记录哈希 ✓</td><td>用公开事件签名计算"接收者无关"的 canonicalHandHash，离线验证器暴露且与线上一致——任意两名玩家可比对各自记录、发现篡改或缺漏。</td></tr>
               <tr><td>客户端 CID 校验显示 ✓</td><td>安全面板对比"运行中的 CID 与权威发布 CID"，显示已锁定 / 不符 / 未从固定入口运行。</td></tr>
               <tr><td>中继 token 移出 URL ✓</td><td>中继认证 token 改走 WebSocket 子协议而非 URL 查询串，避免进入代理 / CDN / 访问日志。</td></tr>
@@ -140,6 +141,12 @@
                 <p><span class="fp-gap-lbl">可能影响：</span>理论上有人想做"假牌堆"或操纵发牌顺序。</p>
                 <p><span class="fp-gap-lbl">当前兜底：</span>三道关一起封死这条路——① 每个玩家都必须各自参与洗牌并加锁，没有任何单方（包括官方）能决定或得知牌序；② 定稿牌堆必须是 52 张互不相同的密文，做假牌堆会当场红灯；③ 每手摊牌时验证器解出真实牌再查有无重复明文、能否正确解密。<strong>只要这手牌 4 灯通过且无重复明文，这副牌就是被全员合法洗过的 52 张真牌。</strong>缺的只是"在不亮牌前用零知识数学证明合法置换"，即把现在的"事后每手必抓"升级为"事前数学上不可能"。</p>
                 <p><span class="fp-gap-lbl">计划：</span>引入可验证洗牌证明并纳入验证器。</p>
+              </td></tr>
+              <tr><td>全下掉线的退款边界</td><td class="fp-gap-cell">
+                <div class="fp-cov partial">不偷钱 · 仅"真掉线"可触发</div>
+                <p><span class="fp-gap-lbl">可能影响：</span>全下之后只剩翻公共牌时，一名<strong>快要输</strong>的玩家可以直接掉线、并扣住自己的解牌钥匙，使这手牌翻不出板而被判作废、双方退还本金——把"大概率会输"变成"退款"。</p>
+                <p><span class="fp-gap-lbl">当前兜底：</span>这<strong>不是偷钱</strong>（双方都退回本金、筹码不增不减）；"在线状态下喊作废"的赖账已被<strong>完全封死</strong>（当作弃牌、照常输掉），只剩"真掉线"这一条。我们刻意保留"退款"而非"掉线就判负"，因为后者会给掌控连线的官方一个新的作弊面（可在你钥匙广播前掐断连接逼你判负）——退款才是对玩家最安全的选择，并可在账号层对反复全下掉线做检测告警。</p>
+                <p><span class="fp-gap-lbl">计划：</span>引入<strong>零知识 / 可中途退出的发牌</strong>——让公共牌可凭公开承诺由在场各方独立翻出、无需逃跑者事后配合，从根上消除这条赖账（届时真掉线也照常分出胜负）。</p>
               </td></tr>
               <tr><td>登录抗离线爆破（部分）</td><td class="fp-gap-cell">
                 <div class="fp-cov partial">强密码下已兜住 · 不影响牌局</div>
@@ -195,6 +202,7 @@
             <thead><tr><th>Capability</th><th>What it does</th></tr></thead>
             <tbody>
               <tr><td>Operator zero referee · zero kick power ✓</td><td>The protocol has no "operator kick" event type and no centralized referee. The relay is now a dumb relay: it only orders, forwards, and reports who is online — it computes <strong>no seats / rounds / winners / chips</strong>. Bets / folds / sit-outs require the player's own signed action; only when continuation is impossible does a unanimous-void path refund the hand in full. The relay closing a WebSocket only triggers exponential-backoff client reconnect — it cannot change game state or seize a seat or chips.</td></tr>
+              <tr><td>Thinking-timeout fold is self-authorized ✓</td><td>A thinking-timeout only folds you via <strong>your own client</strong> (on its local clock), or — when you are <strong>genuinely unreachable</strong> — by others so the table never freezes; the scorekeeper <strong>no longer uses the relay's timestamp</strong> to judge a timeout. So even a relay colluding with a seat cannot forge a "fake timeout" to fold an on-turn opponent who has not actually timed out and take the disputed pot — a money-moving fold requires the player's own signature or a genuine disconnect, and can never touch a present opponent.</td></tr>
               <tr><td>Browser-authoritative · refresh-proof seat ✓</td><td>Seats / pot / turn order / winner / history are all computed by your browser with the <strong>same deterministic reducer</strong> over the signed event log, never from relay room state — two browsers reading the same log necessarily agree. After reconnect, sinceSeq replays missed messages to complete the log, then the browser re-derives the identical state; returning while it's your turn resumes that turn instead of being misclassified as "spectator / please sit back down", and bets no longer disagree across clients. History is kept locally and survives a refresh.</td></tr>
               <tr><td>Four-light fairness audit per hand ✓</td><td>At the end of every hand, the browser automatically runs four checks (deck integrity · all players shuffled and locked · matching record fingerprint · signatures complete) and shows the result in an overlay. A pass stamps "verified"; a warn lights red and offers the evidence for download — an active alert on top of passive evidence.</td></tr>
               <tr><td>Disconnect rule simplified · recover or void ✓</td><td>Two fixed rules: a recoverable disconnect auto-recovers losslessly; if a needed decrypt key is unavailable the hand voids, every bet is refunded in full, and the table ends so players start a fresh room. No "penalty / forfeit / operator kick" knobs. The rules panel is shown on host setup and the joiner waiting view.</td></tr>
@@ -209,7 +217,7 @@
               <tr><td>Deck / key structural checks ✓</td><td>The deck must be 52 valid integer ciphertexts; per-card keys and public keys must be valid and length-bounded, preventing huge-number parsing denial of service.</td></tr>
               <tr><td>Verifier event coverage ✓</td><td>The offline transcript verifier now recognises and checks every table event type, no longer silently skipping any.</td></tr>
               <tr><td>Session domain separation ✓</td><td>Each signing session is bound to a random sessionNonce; the offline verifier uses it to detect sequence replay and reordering within a session.</td></tr>
-              <tr><td>Key strength floor ✓</td><td>The mental-poker SRA bit floor was raised to 1024 (a 2048-bit modulus, discrete-log infeasible) with a 2048-bit ceiling — weak parameters are clamped up and oversized ones are capped, removing both the tiny-bits crash and the huge-bits hang denial of service; cards are also encoded as quadratic residues, so no residue bit leaks about hidden cards.</td></tr>
+              <tr><td>Key strength floor ✓</td><td>The mental-poker SRA bit floor was raised to 1024 (a 2048-bit modulus, discrete-log infeasible) with a 2048-bit ceiling — weak parameters are clamped up and oversized ones are capped, removing both the tiny-bits crash and the huge-bits hang denial of service; cards are also encoded as quadratic residues <strong>shifted off the 0/1 fixed points</strong> (otherwise the card landing on "1" would always cipher to "1" and be identifiable with zero keys), so no residue bit leaks about any hidden card.</td></tr>
               <tr><td>Per-hand consensus hash ✓</td><td>A receiver-independent canonicalHandHash is computed from public event signatures and exposed by the offline verifier, identical to live — any two players can compare their records and detect tampering or omission.</td></tr>
               <tr><td>Client CID verification display ✓</td><td>The security panel compares the running CID against the authoritative release CID and shows locked / mismatch / not-pinned.</td></tr>
               <tr><td>Relay token out of the URL ✓</td><td>The relay auth token now travels in a WebSocket subprotocol instead of the URL query string, keeping it out of proxies, CDNs, and access logs.</td></tr>
@@ -235,6 +243,12 @@
                 <p><span class="fp-gap-lbl">What it affects:</span> in theory, someone trying to "stack the deck" or rig the deal order.</p>
                 <p><span class="fp-gap-lbl">Contained today:</span> three gates already close this off — ① every player must each shuffle and lock, so no single party (including the operator) can set or learn the order; ② the finalized deck must be 52 distinct ciphertexts, so a stacked deck lights red on the spot; ③ at every showdown the verifier decrypts the real cards and checks for duplicate plaintext and correct decryption. <strong>If a hand passes its four lights with no duplicate plaintext, that deck was a genuine 52-card deck shuffled by everyone.</strong> What's missing is only a zero-knowledge proof of a valid permutation <em>without revealing</em> — i.e. upgrading today's "caught every hand, after the fact" to "mathematically impossible, before the fact".</p>
                 <p><span class="fp-gap-lbl">Plan:</span> add a verifiable shuffle proof and fold it into the verifier.</p>
+              </td></tr>
+              <tr><td>All-in disconnect refund boundary</td><td class="fp-gap-cell">
+                <div class="fp-cov partial">no theft · only a genuine disconnect</div>
+                <p><span class="fp-gap-lbl">Could affect:</span> after an all-in, when only the board reveal remains, a player who is <strong>about to lose</strong> can disconnect and withhold their decryption keys so the board can't be revealed — the hand voids and both stakes are refunded, turning a likely loss into a refund.</p>
+                <p><span class="fp-gap-lbl">Current cover:</span> this is <strong>not theft</strong> (both stakes returned, no chips minted or destroyed); the connected "claim a void" dodge is <strong>fully blocked</strong> (treated as a fold, the loss stands), leaving only a genuine disconnect. We deliberately keep "refund" rather than "disconnect = forfeit", because forfeiting would hand the connectivity-controlling operator a new attack surface (cut your link before your keys broadcast to force a loss) — refund is the player-safest choice, with account-level detection of repeated all-in disconnects.</p>
+                <p><span class="fp-gap-lbl">Plan:</span> a <strong>zero-knowledge / abort-resistant deal</strong> — the board is recoverable from public commitments by the present players with no cooperation from the leaver, removing this dodge at the root (a genuine disconnect then still resolves normally).</p>
               </td></tr>
               <tr><td>Offline-guess-resistant login (partial)</td><td class="fp-gap-cell">
                 <div class="fp-cov partial">Contained for strong passwords · no game impact</div>

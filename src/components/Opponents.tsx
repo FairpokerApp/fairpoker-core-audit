@@ -21,8 +21,8 @@ const SEAT_ARC_SWEEP_DEG = 248; // wraps over the top to lower-right (open botto
 const SEAT_RADIUS_X = 49;
 const SEAT_RADIUS_Y = 44;
 const SEAT_CENTER_Y = 54;
-const SEAT_X_MIN = 9; // keep edge seats on-screen and clear of the centred board
-const SEAT_X_MAX = 91;
+const SEAT_X_MIN = 7; // keep edge seats on-screen and clear of the centred board
+const SEAT_X_MAX = 93;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -163,7 +163,7 @@ export default function Opponents(props: {
       }
       {
         players && (
-          <div className="opponents opponents-oval" data-testid="opponents">
+          <div className={`opponents opponents-oval${currentRoundFinished ? ' opponents-oval-showdown' : ''}`} data-testid="opponents">
             {((): React.ReactElement[] => {
               const myOffset = players.findIndex(p => p === playerId);
               const playersStartingAfterMe = myOffset < 0

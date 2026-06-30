@@ -9011,6 +9011,7 @@ select {
   min-height: 0;
   width: 100%;
   max-width: 820px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -9115,22 +9116,45 @@ select {
   line-height: 1.1;
 }
 
+/* Like the top-tier apps, opponents show NO hole cards while the hand is live — the
+   seat stays a clean avatar + name + stack. The cards are the payoff at SHOWDOWN,
+   where they're revealed just below the seat (toward the felt, away from the toolbar),
+   at a readable size. Absolute, so they never change the seat box. */
+.opponents-oval:not(.opponents-oval-showdown) .opponent .hand-cards {
+  display: none;
+}
+
+/* Showdown cards overlay the avatar (centred on the seat), so they stay inside the
+   seat's own column at the ring's edge — never reaching across into the centred
+   community board, and never poking up under the toolbar. */
 .opponents-oval .opponent .hand-cards {
   position: absolute;
-  top: -9px;
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1;
-  gap: 2px;
+  z-index: 5;
+  gap: 3px;
   margin: 0;
   pointer-events: none;
 }
 
-.opponents-oval .opponent .card {
-  --card-w: 24px;
-  width: 24px;
-  height: 36px;
+/* At showdown the revealed hand IS the seat's headline: the avatar steps aside
+   (keeping its footprint so nothing reflows) and the two cards take its place,
+   with the name + result reading clearly underneath. */
+.opponents-oval.opponents-oval-showdown .opponent .avatar {
+  opacity: 0;
+}
+
+.opponents-oval.opponents-oval-showdown .opponent .hand-cards {
+  top: -3px;
+}
+
+.opponents-oval.opponents-oval-showdown .opponent .card {
+  --card-w: 34px;
+  width: 34px;
+  height: 51px;
   margin: 0 1px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5);
 }
 
 .opponents-oval .opponent .bet-amount {
@@ -9213,14 +9237,15 @@ select {
     height: 11px;
   }
 
-  /* Hide the opponents' hole-card backs in the phone oval — they add width that
-     pushes the side seats into the board. The avatar + stack + bet read clean. */
-  .opponents-oval .opponent .hand-cards {
-    display: none;
+  /* Phone showdown: revealed opponent cards, readable but compact. */
+  .opponents-oval.opponents-oval-showdown .opponent .card {
+    --card-w: 30px;
+    width: 30px;
+    height: 45px;
   }
 
   .poker-felt .community-cards {
-    width: min(64%, 250px);
+    width: min(58%, 220px);
   }
 
   .poker-felt .community-cards .card {

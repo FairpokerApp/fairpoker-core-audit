@@ -37,7 +37,7 @@ type RelayServerMessage =
   | { type: 'peerLeft'; peerId: string }
   | { type: 'riskUpdate'; roomRisk?: unknown }
   | { type: 'roomState'; roomState?: WorkerRoomState }
-  | { type: 'message'; from: string; seq?: number; replay?: boolean; data: unknown }
+  | { type: 'message'; from: string; seq?: number; ts?: number; replay?: boolean; data: unknown }
   | { type: 'error'; message: string };
 
 type RelaySummary = {
@@ -465,7 +465,9 @@ export default class CloudflareRelayTransport {
       if (message.from !== this.peerId && message.from !== RELAY_SYSTEM_SENDER) {
         this.connected.add(message.from);
       }
-      this.emitTransportMessage(message.from, message.data, Boolean(message.replay));
+      // Forward the relay's server receive-timestamp (a trusted clock) so the reducer can
+      // verify a thinking-timeout REALLY elapsed before honoring an auto-fold. (D-1.)
+      this.emitTransportMessage(message.from, message.data, Boolean(message.replay), message.ts);
       return;
     }
 
@@ -517,9 +519,9 @@ export default class CloudflareRelayTransport {
     }
   }
 
-  private emitTransportMessage(from: string, data: unknown, replay: boolean) {
+  private emitTransportMessage(from: string, data: unknown, replay: boolean, relayTs?: number) {
     for (const listener of Array.from(this.listeners.message)) {
-      (listener as (from: string, data: unknown, replay?: boolean) => void)(from, data, replay);
+      (listener as (from: string, data: unknown, replay?: boolean, relayTs?: number) => void)(from, data, replay, relayTs);
     }
   }
 }

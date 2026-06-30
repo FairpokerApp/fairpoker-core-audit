@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh" data-lang="zh">
+<html lang="zh" data-lang="zh" data-title-zh="Fair Poker — 负责任游戏与非赌博声明" data-title-en="Fair Poker — Responsible Play">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -110,7 +110,8 @@
         <p>不同司法辖区对扑克题材软件（即便是娱乐筹码）有不同规定。你需自行确认在你所在地使用本服务合法；若当地禁止，请停止使用。</p>
 
         <h2>联系</h2>
-        <p>有任何疑问或需要协助，请联系 <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>。</p>
+        <p>有任何疑问或需要协助，请联系 <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener"><span data-l="zh">开源代码</span><span data-l="en">Source code</span></a>
+        <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>。</p>
       </div>
 
       <div data-l="en">
@@ -183,5 +184,14 @@
         }
       })();
     </script>
-  </body>
+  
+    <script>
+      (function(){
+        var el=document.documentElement;
+        function applyTitle(){var l=el.getAttribute('data-lang')||'zh';var t=el.getAttribute('data-title-'+l)||el.getAttribute('data-title-zh');if(t)document.title=t;}
+        applyTitle();
+        try{new MutationObserver(applyTitle).observe(el,{attributes:true,attributeFilter:['data-lang']});}catch(e){}
+      })();
+    </script>
+</body>
 </html>

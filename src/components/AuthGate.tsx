@@ -711,6 +711,8 @@ const manifest = {
             <a href={`${process.env.PUBLIC_URL}/audit-report.html`} target="_blank" rel="noreferrer">{t('auditReportTitle')}</a>
             <a href={`${process.env.PUBLIC_URL}/verify-guide.html`} target="_blank" rel="noreferrer">{t('verifyGuideTitle')}</a>
             <a href={`${process.env.PUBLIC_URL}/security.html`} target="_blank" rel="noreferrer">{t('securityGuideTitle')}</a>
+            <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noreferrer">{t('repoCardTitle')}</a>
+            <a href="https://snyk.io/test/github/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noreferrer">{t('snykCardTitle')}</a>
           </div>
         </section>
 
@@ -785,6 +787,16 @@ const manifest = {
                 <strong>{t('securityGuideTitle')}</strong>
                 <small>{t('securityGuideText')}</small>
                 <span>{t('securityGuideOpen')}</span>
+              </a>
+              <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noreferrer">
+                <strong>{t('repoCardTitle')}</strong>
+                <small>{t('repoCardText')}</small>
+                <span>{t('repoCardOpen')}</span>
+              </a>
+              <a href="https://snyk.io/test/github/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noreferrer">
+                <strong>{t('snykCardTitle')}</strong>
+                <small>{t('snykCardText')}</small>
+                <span>{t('snykCardOpen')}</span>
               </a>
             </div>
           </div>
@@ -937,6 +949,7 @@ const manifest = {
             <a href={`${process.env.PUBLIC_URL}/terms.html`}>{t('footerTerms')}</a>
             <a href={`${process.env.PUBLIC_URL}/cookies.html`}>{t('footerCookies')}</a>
             <a href={`${process.env.PUBLIC_URL}/responsible-play.html`}>{t('footerResponsible')}</a>
+            <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noreferrer">{t('footerSourceCode')}</a>
             <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
           </nav>
           <p className="auth-footer-license">{t('licenseText')}</p>

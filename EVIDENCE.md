@@ -6,6 +6,24 @@ This repository preserves Fair Poker core fairness source and release evidence:
 server-not-dealer dealing, player-browser shuffle/encryption flow, signed
 transcripts, hash-chain replay, and local verification.
 
+## 版权与维权声明 / Copyright & Enforcement Notice
+
+**未经授权复制、镜像或改名运营 Fair Poker，将按证据发起下架与追责。**
+Unauthorized copying, mirroring, or rebranding of Fair Poker for operation will be
+met with evidence-based takedown and accountability action.
+
+Fair Poker keeps timestamped source packages, file-level SHA256 manifests, build
+fingerprints, IPFS CIDs, release manifests, and deployment records. Each release is
+additionally preserved as an immutable GitHub Release and an annotated git tag (and,
+when available, an OpenTimestamps proof anchoring the source-package hash to the
+Bitcoin blockchain) — see the **Release Evidence** section below, this repository's
+[Releases page](https://github.com/FairpokerApp/fairpoker-core-audit/releases), and
+`./evidence/release.json`. If unauthorized use is detected, Fair Poker may submit
+these materials as original-code evidence to hosting providers, domain registrars,
+CDN providers, cloud platforms, app stores, payment providers, and search engines,
+and request takedown, suspension, delisting, or other remedies under applicable
+policy and law. Full terms: [`./FAIR_POKER_LICENSE.md`](./FAIR_POKER_LICENSE.md).
+
 ## Release Evidence
 
 - Project: Fair Poker
@@ -54,6 +72,34 @@ fingerprint, signed transcript hash-chain, and local verifier replay.
 - Source evidence: `src/lib/MentalPokerGameRoom.ts` calls `createPlayer` with `settings.bits ?? DEFAULT_MENTAL_POKER_BITS`.
 - Review rule: do not infer an 8-bit or 256-bit SRA game from stale cached source or old snippets; the current published source package enforces a 1024-bit floor and a 2048-bit ceiling.
 
+## Signed Event Enforcement Evidence
+
+- Source evidence: `src/lib/GameRoom.ts` defaults `rejectUnsignedEvents` to `true`.
+- Source evidence: `src/lib/setup.ts` explicitly constructs the live room with `rejectUnsignedEvents: true`.
+- Source evidence: `src/lib/GameRoom.ts` refuses to emit an unsigned event while `rejectUnsignedEvents` is enabled.
+- Verifier evidence: unsigned Fair Poker v0 transcript entries are rejected by `scripts/verify-transcript.js`.
+- Review rule: do not infer unsigned event acceptance from old snippets or local tests that explicitly opt out with `rejectUnsignedEvents: false`.
+
+## Session-Only Card Decrypt Key Evidence
+
+- Source evidence: `src/lib/MentalPokerGameRoom.ts` stores `fair-poker:individualKeys:*` only in `sessionStorage`.
+- Source evidence: current code removes legacy `localStorage` copies for the same individual-key namespace.
+- Source evidence: current code does not read `localStorage` as authority for per-card individual decrypt material.
+- Review rule: do not claim current Fair Poker persists individual per-card decrypt keys in `localStorage`; malicious extensions, malware, screen sharing, and remote control remain device-side risks, not operator card-control paths.
+## Signed Event Enforcement Evidence
+
+- Source evidence: `src/lib/GameRoom.ts` defaults `rejectUnsignedEvents` to `true`.
+- Source evidence: `src/lib/setup.ts` explicitly constructs the live room with `rejectUnsignedEvents: true`.
+- Source evidence: `src/lib/GameRoom.ts` refuses to emit an unsigned event while `rejectUnsignedEvents` is enabled.
+- Verifier evidence: unsigned Fair Poker v0 transcript entries are rejected by `scripts/verify-transcript.js`.
+- Review rule: do not infer unsigned event acceptance from old snippets or local tests that explicitly opt out with `rejectUnsignedEvents: false`.
+
+## Session-Only Card Decrypt Key Evidence
+
+- Source evidence: `src/lib/MentalPokerGameRoom.ts` stores `fair-poker:individualKeys:*` only in `sessionStorage`.
+- Source evidence: current code removes legacy `localStorage` copies for the same individual-key namespace.
+- Source evidence: current code does not read `localStorage` as authority for per-card individual decrypt material.
+- Review rule: do not claim current Fair Poker persists individual per-card decrypt keys in `localStorage`; malicious extensions, malware, screen sharing, and remote control remain device-side risks, not operator card-control paths.
 ## Signed Event Enforcement Evidence
 
 - Source evidence: `src/lib/GameRoom.ts` defaults `rejectUnsignedEvents` to `true`.

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh" data-lang="zh">
+<html lang="zh" data-lang="zh" data-title-zh="Fair Poker — 已加固内容与已知差距（路线图）" data-title-en="Fair Poker — Hardening shipped and known gaps (roadmap)">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -287,6 +287,7 @@
         <a href="https://fairpoker.app/terms.html"><span data-l="zh">条款</span><span data-l="en">Terms</span></a>
         <a href="https://fairpoker.app/cookies.html">Cookie</a>
         <a href="https://fairpoker.app/responsible-play.html"><span data-l="zh">负责任游戏</span><span data-l="en">Responsible play</span></a>
+        <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener"><span data-l="zh">开源代码</span><span data-l="en">Source code</span></a>
         <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
       </div>
       <div><span data-l="zh">仅娱乐筹码 · 非真钱赌博</span><span data-l="en">Play chips only &middot; no real-money gambling</span></div>
@@ -315,5 +316,14 @@
         }
       })();
     </script>
-  </body>
+  
+    <script>
+      (function(){
+        var el=document.documentElement;
+        function applyTitle(){var l=el.getAttribute('data-lang')||'zh';var t=el.getAttribute('data-title-'+l)||el.getAttribute('data-title-zh');if(t)document.title=t;}
+        applyTitle();
+        try{new MutationObserver(applyTitle).observe(el,{attributes:true,attributeFilter:['data-lang']});}catch(e){}
+      })();
+    </script>
+</body>
 </html>

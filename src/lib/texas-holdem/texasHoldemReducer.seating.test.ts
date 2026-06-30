@@ -9,8 +9,10 @@ import { reduceTexasHoldem, ReducerEvent } from "./texasHoldemReducer";
 const settings = { initialFundAmount: 100, smallBlindAmount: 1, bigBlindAmount: 2 };
 const newRound = (round: number, players: string[]): ReducerEvent =>
   ({ type: 'newRound', from: players[0], round, players, settings });
-const handResult = (round: number, from: string): ReducerEvent =>
-  ({ type: 'hand/result', from, round });
+// A hand really ends when a player folds (or a showdown resolves) — a bare `hand/result` is
+// only an informational "hand over" ping and (post E-1) never resolves/voids a hand, so these
+// seating tests end the hand the way real play does: with a fold.
+const fold = (round: number, from: string): ReducerEvent => ({ type: 'action/fold', from, round });
 const sitOut = (from: string): ReducerEvent => ({ type: 'action/sitOut', from });
 const returnToTable = (from: string): ReducerEvent => ({ type: 'action/returnToTable', from });
 
@@ -55,7 +57,7 @@ test('a deliberate sit-out drops the seat; returning takes it back', () => {
 test('after a hand ends, a player who dropped then returned is re-seated for the next hand (livelock fix)', () => {
   // A refreshes mid-hand (modeled by returnToTable), the hand ends, and the table must
   // re-seat both for the next hand — no stranded "已离座", no dead-locked next hand.
-  const log = [newRound(1, ['A', 'B']), returnToTable('A'), handResult(1, 'B')];
+  const log = [newRound(1, ['A', 'B']), returnToTable('A'), fold(1, 'A')];
   const s = reduceTexasHoldem(log, new Map(), ['A', 'B']);
   expect(s.handInProgress).toBe(false);
   expect(s.seatedForNextHand.sort()).toEqual(['A', 'B']);
@@ -77,8 +79,28 @@ test("the relay's system identity 'worker-relay' is never seated or listed as a 
   expect(s.seatedForNextHand.sort()).toEqual(['A', 'B']);
 });
 
+test('a standard table seats at most 9 (MAX_SEATS); extra peers spectate ("watching")', () => {
+  // Twelve reachable peers want to play. A 9-max table seats exactly 9; the rest stay
+  // as spectators until a seat frees up. The kept 9 are taken in a deterministic
+  // (sorted peerId) order so every client agrees on the same nine.
+  const peers = ['P01','P02','P03','P04','P05','P06','P07','P08','P09','P10','P11','P12'];
+  const s = reduceTexasHoldem([], new Map(), peers);
+  expect(s.seatedForNextHand.length).toBe(9);
+  expect(s.seatedForNextHand).toEqual(['P01','P02','P03','P04','P05','P06','P07','P08','P09']);
+  expect(statusOf(s, 'P10')).toBe('watching');
+  expect(statusOf(s, 'P12')).toBe('watching');
+  expect(s.playable).toBe(true);
+});
+
+test('exactly 9 reachable peers all keep a seat (the cap does not under-seat)', () => {
+  const peers = ['A','B','C','D','E','F','G','H','I'];
+  const s = reduceTexasHoldem([], new Map(), peers);
+  expect(s.seatedForNextHand.length).toBe(9);
+  expect(s.seatedForNextHand.sort()).toEqual(peers);
+});
+
 test('a player who stays gone after the hand is not falsely seated', () => {
-  const s = reduceTexasHoldem([newRound(1, ['A', 'B']), handResult(1, 'B')], new Map(), ['B']);
+  const s = reduceTexasHoldem([newRound(1, ['A', 'B']), fold(1, 'A')], new Map(), ['B']);
   expect(statusOf(s, 'A')).toBe('offline');
   expect(s.seatedForNextHand).toEqual(['B']);
   expect(s.playable).toBe(false);

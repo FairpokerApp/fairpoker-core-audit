@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh" data-lang="zh">
+<html lang="zh" data-lang="zh" data-title-zh="Fair Poker — Cookie 与本地存储说明" data-title-en="Fair Poker — Cookie and Local Storage Policy">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -120,7 +120,8 @@
         <p>我们可能更新本说明。重大变更将通过更新"最后更新"日期公布。与本说明相关的更广泛数据处理，请参阅 <a href="https://fairpoker.app/privacy.html">隐私政策</a>。</p>
 
         <h2>联系</h2>
-        <p>问题请联系 <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>。</p>
+        <p>问题请联系 <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener"><span data-l="zh">开源代码</span><span data-l="en">Source code</span></a>
+        <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>。</p>
       </div>
 
       <div data-l="en">
@@ -196,5 +197,14 @@
         }
       })();
     </script>
-  </body>
+  
+    <script>
+      (function(){
+        var el=document.documentElement;
+        function applyTitle(){var l=el.getAttribute('data-lang')||'zh';var t=el.getAttribute('data-title-'+l)||el.getAttribute('data-title-zh');if(t)document.title=t;}
+        applyTitle();
+        try{new MutationObserver(applyTitle).observe(el,{attributes:true,attributeFilter:['data-lang']});}catch(e){}
+      })();
+    </script>
+</body>
 </html>

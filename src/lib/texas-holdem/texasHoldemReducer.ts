@@ -32,6 +32,12 @@ import { isSignedGameEvent } from "../fairness/eventSigning";
 // already filters it out of the peer set).
 const RELAY_SYSTEM_SENDER = 'worker-relay';
 
+// A standard 9-max table: at most 9 players are seated for a hand. Any further peers
+// stay as spectators ('watching') until a seat frees up. Capped here, in the one
+// browser-authoritative seating derivation, so every client agrees on the same 9 (and
+// the dealer never deals more than 9 hole-card pairs).
+export const MAX_SEATS = 9;
+
 export enum ReducerStage {
   PRE_FLOP = 0,
   FLOP = 1,
@@ -53,7 +59,10 @@ export interface ReducedRound {
   stage: ReducerStage;
   currentTurn: string | null;
   callAmount: number; // amount the current player must add to call
+  currentTurnStartedAtRelayTs?: number; // relay clock when the current turn began (D-1 timing)
   showdownReady: boolean;
+  voidApprovals: Set<string>; // dealt-in players who signed an approving voidHandVote (E-1)
+  cannotContinue: Set<string>; // dealt-in players who declared the hand unfinishable (E-1)
   result?: WinningResult;
 }
 
@@ -83,6 +92,8 @@ export interface ReducedTableState {
   seatedForNextHand: string[]; // peers eligible to play the next hand
   missingPlayers: string[]; // current-hand players unreachable right now
   playable: boolean; // >= 2 seated players ⇒ a hand can start/continue
+  _currentEventRelayTs?: number; // transient: relayTs of the event currently being applied (D-1)
+  _connected?: Set<string>; // transient: the live reachable set (for self/away auto-fold authorization, R4·01)
 }
 
 // round -> (card offset -> decrypted card). Offsets 0..4 are the board, hole cards for
@@ -143,6 +154,8 @@ export interface ReducerEvent {
     | 'action/sitOut'
     | 'action/returnToTable'
     | 'action/openRegistration'
+    | 'action/voidHandVote'
+    | 'action/cannotContinue'
     | 'hand/result';
   from?: string; // signed sender
   round?: number | null;
@@ -150,6 +163,8 @@ export interface ReducerEvent {
   target?: string; // autoFold target
   players?: string[]; // newRound seat order
   settings?: TexasHoldemRoundSettings; // newRound settings
+  approve?: boolean; // voidHandVote approval
+  relayTs?: number; // relay server receive-timestamp (trusted clock for auto-fold timing; D-1)
 }
 
 function emptyState(): ReducedTableState {
@@ -232,8 +247,37 @@ function applyNewRound(state: ReducedTableState, event: ReducerEvent): void {
   if (typeof event.round !== 'number' || !event.players || !event.settings) {
     return;
   }
+  // E-2 idempotency: a round number that already exists is never re-created. A duplicate or
+  // forged `newRound` for a live (or past) round must not overwrite its state — that is how a
+  // replayed/forged reset would vaporize the committed pot and destroy chips.
+  if (state.rounds.has(event.round)) {
+    return;
+  }
+  // E-2 no mid-hand reset: a fresh deal only begins once the previous hand has resolved. A
+  // `newRound` arriving while the current hand is still unresolved (chips committed, no result)
+  // is a forged "restart" whose only effect would be to abandon the live pot — ignore it.
+  // (The first hand has no current round and is unaffected; a normal next-hand deal arrives
+  // only after the prior round resolved, so legitimate play is untouched.)
+  if (state.handInProgress && state.currentRound !== null) {
+    const current = state.rounds.get(state.currentRound);
+    if (current && !current.result) {
+      return;
+    }
+  }
+  // E-2 seat-list integrity: deal each distinct peer at most once (a forged duplicate-self seat
+  // list let one identity hold two seats and skim between them); the relay system id is never a
+  // seat; a real hand needs >= 2 distinct players.
+  const seen = new Set<string>();
+  const players: string[] = [];
+  for (const p of event.players) {
+    if (typeof p !== 'string' || p === RELAY_SYSTEM_SENDER || seen.has(p)) continue;
+    seen.add(p);
+    players.push(p);
+  }
+  if (players.length < 2) {
+    return;
+  }
   const settings = normalizeRoundSettings(event.settings, event.round);
-  const players = event.players.slice();
   const bigBlind = settings.bigBlindAmount!;
   const smallBlind = settings.smallBlindAmount!;
 
@@ -262,6 +306,8 @@ function applyNewRound(state: ReducedTableState, event: ReducerEvent): void {
     currentTurn: null,
     callAmount: 0,
     showdownReady: false,
+    voidApprovals: new Set(),
+    cannotContinue: new Set(),
   };
   state.rounds.set(event.round, round);
   state.currentRound = event.round;
@@ -279,13 +325,16 @@ function applyNewRound(state: ReducedTableState, event: ReducerEvent): void {
   applyBet(state, round, smallBlind, players[0], true);
   applyBet(state, round, bigBlind, players[1], true);
   const firstToAct = players[2 % players.length];
-  setTurn(round, firstToAct, players.length === 2 ? bigBlind - smallBlind : bigBlind);
+  setTurn(state, round, firstToAct, players.length === 2 ? bigBlind - smallBlind : bigBlind);
   state.potAmount = potTotal(round.pot);
 }
 
-function setTurn(round: ReducedRound, who: string | null, callAmount: number): void {
+function setTurn(state: ReducedTableState, round: ReducedRound, who: string | null, callAmount: number): void {
   round.currentTurn = who;
   round.callAmount = who ? callAmount : 0;
+  // Stamp WHEN this turn began on the trusted relay clock, so a later auto-fold can be checked
+  // against the real elapsed time (D-1). A turn with no owner has no clock.
+  round.currentTurnStartedAtRelayTs = who ? state._currentEventRelayTs : undefined;
 }
 
 function applyBet(
@@ -376,7 +425,7 @@ function continueUnlessAllSet(
   if (!next) {
     const everyoneElseAllinOrFold = (players.length - round.allIn.size - round.folded.size) <= 1;
     round.called.clear();
-    setTurn(round, null, 0);
+    setTurn(state, round, null, 0);
     const shouldShowdown = everyoneElseAllinOrFold || round.stage === ReducerStage.RIVER;
     if (shouldShowdown) {
       round.showdownReady = true;
@@ -405,12 +454,12 @@ function continueUnlessAllSet(
     }
     if (!everyoneElseAllinOrFold && !shouldShowdown) {
       const next2 = players.find(p => !round.allIn.has(p) && !round.folded.has(p)) || null;
-      setTurn(round, next2, 0);
+      setTurn(state, round, next2, 0);
     }
   } else {
     const currentBet = round.pot.get(next) ?? 0;
     const callAmount = maxBet(round.pot) - currentBet;
-    setTurn(round, next, callAmount);
+    setTurn(state, round, next, callAmount);
   }
 }
 
@@ -461,7 +510,65 @@ function resolvePendingShowdowns(state: ReducedTableState, reveals: CardReveals)
   }
 }
 
+// Refund every committed chip and mark the round VOIDED (mirrors the engine's voidHand).
+function refundVoid(
+  state: ReducedTableState,
+  round: ReducedRound,
+  approvals: string[],
+  missing: string[],
+): void {
+  if (round.result) return;
+  for (const [player, committed] of Array.from(round.pot.entries())) {
+    if (committed > 0) state.funds.set(player, (state.funds.get(player) ?? 0) + committed);
+  }
+  round.currentTurn = null;
+  round.result = { how: 'Voided', round: round.round, missingPlayers: missing.slice(), approvals: approvals.slice() };
+  if (!state.resolvedRounds.includes(round.round)) state.resolvedRounds.push(round.round);
+  if (state.currentRound === round.round) state.handInProgress = false;
+  state.potAmount = potTotal(round.pot);
+}
+
+// E-1: derive a void+refund ONLY from the same signed evidence the engine requires — never
+// from a bare `hand/result` (which any player could forge to dodge a losing hand). A void is
+// legitimate when the hand is GENUINELY unfinishable: a participant is unreachable AND the
+// table either unanimously voted to void (every still-present dealt-in player approved) or a
+// dealt-in player declared cannotContinue. A fully-connected cannotContinue is NOT a void —
+// it is treated as that player folding (the engine's anti-dodge), so chips can never be
+// clawed back by a connected player abandoning a hand. `connected` is the live reachable set
+// (the same mesh view the engine uses), so this stays consistent with the engine's decision.
+function resolvePendingVoids(state: ReducedTableState, connected: Set<string>): void {
+  for (const round of Array.from(state.rounds.values())) {
+    if (round.result) continue;
+    if (round.voidApprovals.size === 0 && round.cannotContinue.size === 0) continue;
+    const dealtIn = round.players;
+    const missing = dealtIn.filter(p => !connected.has(p));
+    if (round.cannotContinue.size > 0) {
+      if (missing.length > 0) {
+        refundVoid(state, round, dealtIn.filter(p => !missing.includes(p)), missing);
+      } else {
+        // Fully connected "I can't continue" = anti-dodge: the declarer simply folds.
+        for (const declarer of Array.from(round.cannotContinue)) {
+          if (round.result) break;
+          if (dealtIn.includes(declarer) && !round.folded.has(declarer)) {
+            applyFold(state, round, declarer);
+          }
+        }
+      }
+      continue;
+    }
+    // Unanimous manual void vote: only on a paused hand (someone unreachable) and only when
+    // every still-present dealt-in player has signed an approving vote.
+    if (missing.length > 0) {
+      const present = dealtIn.filter(p => connected.has(p));
+      if (present.length > 0 && present.every(p => round.voidApprovals.has(p))) {
+        refundVoid(state, round, present, missing);
+      }
+    }
+  }
+}
+
 function applyEvent(state: ReducedTableState, event: ReducerEvent): void {
+  state._currentEventRelayTs = event.relayTs;
   switch (event.type) {
     case 'newRound':
       applyNewRound(state, event);
@@ -489,6 +596,22 @@ function applyEvent(state: ReducedTableState, event: ReducerEvent): void {
       note(state, event.target);
       const round = state.rounds.get(event.round);
       if (!round) return;
+      // D-1: only the player whose turn it actually is may be auto-folded for a timeout —
+      // exactly the engine's canAutoFold guard. A target that is not the active turn is a
+      // forgery, so drop it.
+      if (round.currentTurn !== event.target) return;
+      // R4·01 — AUTHORIZATION, not relay-clock timing. The previous closure trusted the relay's
+      // receive-timestamp to prove a timeout elapsed, but that clock is operator-controlled and
+      // unsigned (not in the hash-chain), so a relay colluding with a seat could inflate it to
+      // fold a present, on-turn opponent and take the pot — power beyond "controlling connections".
+      // A timeout is now self-authorized: a player is auto-folded only when THEIR OWN client emits
+      // it (from === target, a self-fold on the emitter's own local clock — needs no shared clock),
+      // OR when the target is genuinely unreachable in the live set (a dropped player must not
+      // freeze the table — the existing disconnect behavior). Folding a PRESENT opponent on someone
+      // else's word is refused outright, so no forged relay timestamp can move the pot.
+      const selfFold = event.from !== undefined && event.from === event.target;
+      const targetUnreachable = !(state._connected?.has(event.target) ?? false);
+      if (!selfFold && !targetUnreachable) return;
       applyFold(state, round, event.target);
       return;
     }
@@ -518,27 +641,34 @@ function applyEvent(state: ReducedTableState, event: ReducerEvent): void {
       state.sittingOut.clear();
       state.seated.clear();
       return;
+    case 'action/voidHandVote': {
+      // Record a signed approving void vote from a dealt-in player. The void itself is decided
+      // in resolvePendingVoids (unanimous among still-present players on a paused hand). (E-1)
+      if (typeof event.round !== 'number' || event.from === undefined || event.approve !== true) return;
+      note(state, event.from);
+      const round = state.rounds.get(event.round);
+      if (!round || round.result) return;
+      if (round.players.includes(event.from)) round.voidApprovals.add(event.from);
+      return;
+    }
+    case 'action/cannotContinue': {
+      // Record a signed "this hand can't be finished" declaration from a dealt-in player. The
+      // outcome (objective void+refund vs. anti-dodge fold) is decided in resolvePendingVoids
+      // from the live reachable set — never from a bare result. (E-1)
+      if (typeof event.round !== 'number' || event.from === undefined) return;
+      note(state, event.from);
+      const round = state.rounds.get(event.round);
+      if (!round || round.result) return;
+      if (round.players.includes(event.from)) round.cannotContinue.add(event.from);
+      return;
+    }
     case 'hand/result': {
-      if (typeof event.round === 'number') {
-        const round = state.rounds.get(event.round);
-        // A hand/result for a round the reducer has NOT resolved by showdown/fold means the
-        // hand ended without a normal outcome — it was VOIDED (e.g. a disconnect mid-betting
-        // or a unanimous void & refund). The committed chips must be returned, exactly as the
-        // engine's voidHand does; otherwise funds drift LOW after any void (and that wrong
-        // value would then be checkpointed). Only an interrupted hand is refunded (no result
-        // AND betting not complete), so a showdown still awaiting its reveals is never
-        // mistaken for a void and double-paid.
-        if (round && !round.result && !round.showdownReady) {
-          for (const [player, committed] of Array.from(round.pot.entries())) {
-            if (committed > 0) state.funds.set(player, (state.funds.get(player) ?? 0) + committed);
-          }
-          round.result = { how: 'Voided', round: round.round, missingPlayers: [], approvals: [] };
-          if (!state.resolvedRounds.includes(round.round)) state.resolvedRounds.push(round.round);
-        }
-        if (event.round === state.currentRound) {
-          state.handInProgress = false;
-        }
-      }
+      // E-1: a `hand/result` is a bare, forgeable "hand over" signal — exactly what the live
+      // engine treats as informational and ignores. It must NEVER move funds: the old reducer
+      // refunded the pot on any unresolved-hand result, letting any player dodge a losing hand
+      // (and claw their chips back) with one console command. Real voids are derived from the
+      // signed voidHandVote / cannotContinue evidence in resolvePendingVoids instead, so this
+      // is now a no-op; the resolution paths already manage handInProgress.
       return;
     }
   }
@@ -546,7 +676,8 @@ function applyEvent(state: ReducedTableState, event: ReducerEvent): void {
 
 const REDUCER_EVENT_TYPES = new Set<ReducerEvent['type']>([
   'newRound', 'action/bet', 'action/fold', 'action/autoFold',
-  'action/sitOut', 'action/returnToTable', 'action/openRegistration', 'hand/result',
+  'action/sitOut', 'action/returnToTable', 'action/openRegistration',
+  'action/voidHandVote', 'action/cannotContinue', 'hand/result',
 ]);
 
 // Map the recorded transcript (the ordered signed log the relay sequences) into the
@@ -560,6 +691,7 @@ export function transcriptToReducerEvents(
   for (const entry of transcript.entries) {
     if (entry.scope !== 'public') continue;
     if (entry.signed && entry.signatureValid === false) continue; // the engine rejects these too
+    const relayTs = typeof entry.relayTs === 'number' ? entry.relayTs : undefined;
     const wire = entry.wireEvent;
     const payload = (isSignedGameEvent<TexasHoldemTableEvent>(wire) ? wire.payload : wire) as any;
     const from = (isSignedGameEvent<TexasHoldemTableEvent>(wire) ? wire.sender : entry.transportSender);
@@ -572,6 +704,8 @@ export function transcriptToReducerEvents(
       target: payload.target,
       players: payload.players,
       settings: payload.settings,
+      approve: payload.approve,
+      relayTs,
     });
   }
   return events;
@@ -646,6 +780,7 @@ export function reduceTexasHoldem(
     for (const peer of Array.from(checkpoint.funds.keys())) state.knownPeers.add(peer);
   }
   const connectedSet = new Set(Array.from(connected).filter(p => p !== RELAY_SYSTEM_SENDER));
+  state._connected = connectedSet; // expose to applyEvent for auto-fold authorization (R4·01)
   for (const peer of Array.from(connectedSet)) state.knownPeers.add(peer);
   for (const event of events) {
     // Events for rounds already folded into the checkpoint are skipped, so each round is
@@ -656,8 +791,11 @@ export function reduceTexasHoldem(
     // Card reveals can complete a showdown the instant its cards are known; re-checking
     // after every event keeps resolution deterministic regardless of reveal timing.
     resolvePendingShowdowns(state, reveals);
+    // A void becomes legitimate once its signed evidence + the reachable set line up (E-1).
+    resolvePendingVoids(state, connectedSet);
   }
   resolvePendingShowdowns(state, reveals);
+  resolvePendingVoids(state, connectedSet);
   if (state.currentRound !== null) {
     state.potAmount = potTotal(state.rounds.get(state.currentRound)?.pot ?? new Map());
   }
@@ -691,10 +829,24 @@ function computeSeating(state: ReducedTableState, connected: Set<string>): void 
     }
   }
 
-  const seatPlayers: SeatPlayer[] = Array.from(state.knownPeers).sort().map(peerId => {
+  // Cap the table at MAX_SEATS. Players already dealt into the live hand always keep
+  // their seat; between hands the seatable set is taken in a deterministic order (sorted
+  // peerId — identical on every client) and trimmed to MAX_SEATS, so the same 9 are
+  // seated everywhere and any extras fall back to spectating ('watching').
+  const sortedPeers = Array.from(state.knownPeers).sort();
+  const seatableInOrder = sortedPeers.filter(peerId =>
+    state.seated.has(peerId) && connected.has(peerId) && !state.sittingOut.has(peerId));
+  const dealtIn = new Set(currentPlayers);
+  const seatAllowed = new Set<string>(dealtIn);
+  for (const peerId of seatableInOrder) {
+    if (seatAllowed.size >= MAX_SEATS) break;
+    seatAllowed.add(peerId);
+  }
+
+  const seatPlayers: SeatPlayer[] = sortedPeers.map(peerId => {
     const online = connected.has(peerId);
     const isMissing = missing.has(peerId);
-    const seated = state.seated.has(peerId) && online && !state.sittingOut.has(peerId);
+    const seated = state.seated.has(peerId) && online && !state.sittingOut.has(peerId) && seatAllowed.has(peerId);
     const status: SeatStatus = !online
       ? (isMissing ? 'missing' : 'offline')
       : seated

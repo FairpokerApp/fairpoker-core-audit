@@ -22,8 +22,8 @@ type WorkerRelayMeshEvents<T> = {
   ready: (localPeerId: string) => void;
   message: (
     message:
-      | { type: 'public'; sender: string; data: T }
-      | { type: 'private'; sender: string; recipient: string; data: T },
+      | { type: 'public'; sender: string; data: T; relayTs?: number }
+      | { type: 'private'; sender: string; recipient: string; data: T; relayTs?: number },
     replay: boolean,
   ) => void;
   peersChanged: (peers: string[]) => void;
@@ -151,7 +151,7 @@ export default class WorkerRelayMesh<T> implements MeshLike<T> {
     this.emitter.emit('peersChanged', this._peers);
   };
 
-  private handleMessage = (from: string, data: unknown, replay?: boolean) => {
+  private handleMessage = (from: string, data: unknown, replay?: boolean, relayTs?: number) => {
     if (!isRelayEnvelope<T>(data)) {
       this.emitter.emit('error', new Error('Worker relay delivered an unsupported message envelope.'));
       return;
@@ -161,6 +161,7 @@ export default class WorkerRelayMesh<T> implements MeshLike<T> {
         type: 'public',
         sender: from,
         data: data.data,
+        relayTs,
       }, Boolean(replay));
       return;
     }
@@ -172,6 +173,7 @@ export default class WorkerRelayMesh<T> implements MeshLike<T> {
       sender: from,
       recipient: data.recipient,
       data: data.data,
+      relayTs,
     }, Boolean(replay));
   };
 

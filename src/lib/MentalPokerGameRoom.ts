@@ -1,5 +1,6 @@
 import {GameEvent, GameRoomEvents, GameRoomStatus} from "./GameRoom";
 import {
+  assertSoundModulus,
   createPlayer,
   decodeStandardCard,
   DEFAULT_MENTAL_POKER_BITS,
@@ -815,7 +816,22 @@ export default class MentalPokerGameRoom {
     }
 
     if (e.publicKey) {
-      roundData.sharedPublicKey.resolve(new PublicKey(BigInt(e.publicKey.p), BigInt(e.publicKey.q)));
+      // B-1: never adopt a peer's SRA modulus on trust. Validate that p,q are large, prime,
+      // distinct and have a hard (non-smooth) order before using them. A weak/composite/smooth
+      // modulus would let the shuffler read every hole card, so reject it: refuse to resolve the
+      // shared key. Every honest client does the same, so the rigged deck never completes and the
+      // hand is voided by the existing stall/void recovery — no one ever decrypts under it.
+      let validModulus: PublicKey | null = null;
+      try {
+        const p = BigInt(e.publicKey.p);
+        const q = BigInt(e.publicKey.q);
+        await assertSoundModulus(p, q, settings.bits);
+        validModulus = new PublicKey(p, q);
+      } catch (modulusError) {
+        console.error(`Rejecting round ${e.round}: unsound mental-poker modulus from ${e.player}.`, modulusError);
+        return;
+      }
+      roundData.sharedPublicKey.resolve(validModulus);
     }
 
     const nextShuffleIndex = e.shuffleIndex + 1;

@@ -81,12 +81,16 @@ function makeDeck(prefix: string): string[] {
 }
 
 function makePlainFinalDeck(codesByOffset: Record<number, number>): string[] {
+  // codesByOffset are 1..52 card indices; the real deck stores each as (index+1)^2 (the encoding
+  // the client and verifier use — Audit R4-11), so encode here too. (Without this the test would
+  // feed the OLD raw 1..52 values and silently diverge from the real client. Audit R4-12.)
+  const enc = (code: number) => String((code + 1) * (code + 1));
   const usedCodes = new Set(Object.values(codesByOffset));
   const remainingCodes = Array.from({length: 52}, (_, index) => index + 1)
     .filter(code => !usedCodes.has(code));
   return Array.from({length: 52}, (_, offset) => {
     const explicitCode = codesByOffset[offset];
-    return String(explicitCode ?? remainingCodes.shift());
+    return enc(explicitCode ?? remainingCodes.shift()!);
   });
 }
 
@@ -230,7 +234,7 @@ async function appendPublicDecrypts(
   round: number,
   offsets: number[],
 ): Promise<void> {
-  const decryptionKey = {d: '1', n: '997'};
+  const decryptionKey = {d: '1', n: '10007'}; // identity on encoded card values ≤ 53^2 = 2809 (Audit R4-11)
   for (const cardOffset of offsets) {
     await appendSigned(recorder, alice, {
       type: 'card/decrypt',

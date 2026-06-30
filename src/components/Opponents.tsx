@@ -12,6 +12,32 @@ import {workerConnectionStatus} from "../lib/useWorkerRoomState";
 import {WinningResult} from "../lib/texas-holdem/TexasHoldemGameRoom";
 import {workerRoomSeatedPlayers} from "../lib/useWorkerRoomState";
 
+// 9-max oval seating. Hero is always bottom-centre; opponents fan out clockwise
+// from the hero's lower-left, over the top, to the hero's lower-right — the bottom
+// arc (toward the hero) is left open. Positions are percentages of the felt stage,
+// so the same numbers render as a TALL oval on a phone and a WIDE oval on desktop.
+const SEAT_ARC_START_DEG = 236; // lower-left, just left of the hero
+const SEAT_ARC_SWEEP_DEG = 248; // wraps over the top to lower-right (open bottom)
+const SEAT_RADIUS_X = 49;
+const SEAT_RADIUS_Y = 44;
+const SEAT_CENTER_Y = 54;
+const SEAT_X_MIN = 9; // keep edge seats on-screen and clear of the centred board
+const SEAT_X_MAX = 91;
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+function ovalSeatStyle(index: number, total: number): React.CSSProperties {
+  const step = SEAT_ARC_SWEEP_DEG / (total + 1);
+  const deg = (SEAT_ARC_START_DEG + (index + 1) * step) % 360;
+  const rad = (deg * Math.PI) / 180;
+  const x = clamp(50 + SEAT_RADIUS_X * Math.sin(rad), SEAT_X_MIN, SEAT_X_MAX);
+  const y = SEAT_CENTER_Y - SEAT_RADIUS_Y * Math.cos(rad);
+  return {
+    '--seat-x': `${x.toFixed(2)}%`,
+    '--seat-y': `${y.toFixed(2)}%`,
+  } as React.CSSProperties;
+}
+
 export default function Opponents(props: {
   members: string[];
   playerId: string | undefined;
@@ -137,19 +163,20 @@ export default function Opponents(props: {
       }
       {
         players && (
-          <div className="opponents" data-testid="opponents">
+          <div className="opponents opponents-oval" data-testid="opponents">
             {((): React.ReactElement[] => {
               const myOffset = players.findIndex(p => p === playerId);
               const playersStartingAfterMe = myOffset < 0
                 ? [...players]
                 : [...players.slice(myOffset + 1), ...players.slice(0, myOffset)];
-              return playersStartingAfterMe
-                .filter(p => p !== playerId)
+              const opponentsOrdered = playersStartingAfterMe.filter(p => p !== playerId);
+              return opponentsOrdered
                 .map((opponent, i) => (
                   <div
                     key={opponent}
                     className="opponent"
                     data-testid={`opponent-${i}`}
+                    style={ovalSeatStyle(i, opponentsOrdered.length)}
                   >
                     {renderOpponentAvatar(opponent)}
                     {handRankFor(opponent) && (

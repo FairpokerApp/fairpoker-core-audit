@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh" data-lang="zh">
+<html lang="zh" data-lang="zh" data-title-zh="Fair Poker — 公开安全与公平证据状态" data-title-en="Fair Poker — Public security and fairness evidence">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -133,6 +133,8 @@
           <a href="/security.html">安全与攻击模型</a>
           <a href="/source/release.json">最新源码发布清单</a>
           <a href="/ai.json">AI 可读 JSON 摘要</a>
+          <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener">开源代码仓库（GitHub）</a>
+          <a href="https://snyk.io/test/github/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener">Snyk 安全扫描报告</a>
         </div>
       </div>
 
@@ -152,6 +154,8 @@
           <a href="/security.html">Security and attack model</a>
           <a href="/source/release.json">Latest source release manifest</a>
           <a href="/ai.json">AI-readable JSON summary</a>
+          <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener">Open-source repository (GitHub)</a>
+          <a href="https://snyk.io/test/github/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener">Snyk security report</a>
         </div>
       </div>
     </main>
@@ -167,6 +171,7 @@
         <a href="https://fairpoker.app/terms.html"><span data-l="zh">条款</span><span data-l="en">Terms</span></a>
         <a href="https://fairpoker.app/cookies.html">Cookie</a>
         <a href="https://fairpoker.app/responsible-play.html"><span data-l="zh">负责任游戏</span><span data-l="en">Responsible play</span></a>
+        <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener"><span data-l="zh">开源代码</span><span data-l="en">Source code</span></a>
         <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
       </div>
       <div><span data-l="zh">仅娱乐筹码 · 非真钱赌博</span><span data-l="en">Play chips only &middot; no real-money gambling</span></div>
@@ -242,5 +247,14 @@
         document.addEventListener('fairpoker:languagechange', render);
       })();
     </script>
-  </body>
+  
+    <script>
+      (function(){
+        var el=document.documentElement;
+        function applyTitle(){var l=el.getAttribute('data-lang')||'zh';var t=el.getAttribute('data-title-'+l)||el.getAttribute('data-title-zh');if(t)document.title=t;}
+        applyTitle();
+        try{new MutationObserver(applyTitle).observe(el,{attributes:true,attributeFilter:['data-lang']});}catch(e){}
+      })();
+    </script>
+</body>
 </html>

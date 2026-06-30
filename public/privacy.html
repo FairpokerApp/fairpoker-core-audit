@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh" data-lang="zh">
+<html lang="zh" data-lang="zh" data-title-zh="Fair Poker — 隐私政策" data-title-en="Fair Poker — Privacy Policy">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -119,7 +119,8 @@
 
       <div data-l="zh">
         <h2 id="who">1. 我们是谁</h2>
-        <p>本服务由 Fair Poker 运营方（"我们"）提供。就适用数据保护法而言，我们是处理本政策所述个人数据的数据控制者。隐私相关事宜联系：<a href="mailto:support@fairpoker.app">support@fairpoker.app</a>。</p>
+        <p>本服务由 Fair Poker 运营方（"我们"）提供。就适用数据保护法而言，我们是处理本政策所述个人数据的数据控制者。隐私相关事宜联系：<a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener"><span data-l="zh">开源代码</span><span data-l="en">Source code</span></a>
+        <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>。</p>
 
         <h2 id="collect">2. 我们收集的数据</h2>
         <div class="fp-table-wrap">
@@ -303,5 +304,14 @@
         }
       })();
     </script>
-  </body>
+  
+    <script>
+      (function(){
+        var el=document.documentElement;
+        function applyTitle(){var l=el.getAttribute('data-lang')||'zh';var t=el.getAttribute('data-title-'+l)||el.getAttribute('data-title-zh');if(t)document.title=t;}
+        applyTitle();
+        try{new MutationObserver(applyTitle).observe(el,{attributes:true,attributeFilter:['data-lang']});}catch(e){}
+      })();
+    </script>
+</body>
 </html>

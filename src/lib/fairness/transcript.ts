@@ -17,6 +17,10 @@ export interface TranscriptEntry<T> {
   signatureFailureReason?: string;
   payloadHash: string;
   wireEvent: T | SignedGameEvent<T>;
+  // Relay's server receive-timestamp (ms). A SIDECAR — deliberately excluded from `eventHash`
+  // so it never changes the transcript chain / reproducible gameCid — used by the reducer as a
+  // trusted clock to verify a thinking-timeout really elapsed before an auto-fold. (Audit D-1.)
+  relayTs?: number;
 }
 
 export interface TranscriptSnapshot<T> {
@@ -42,6 +46,7 @@ export class TranscriptRecorder<T> {
     scope: 'public' | 'private';
     recipient?: string;
     wireEvent: T | SignedGameEvent<T>;
+    relayTs?: number;
   }): Promise<TranscriptEntry<T>> {
     const appended = this.appendQueue.then(() => this.appendNow(input));
     this.appendQueue = appended.catch(() => undefined);
@@ -53,6 +58,7 @@ export class TranscriptRecorder<T> {
     scope: 'public' | 'private';
     recipient?: string;
     wireEvent: T | SignedGameEvent<T>;
+    relayTs?: number;
   }): Promise<TranscriptEntry<T>> {
     const signatureCheck = isSignedGameEvent<T>(input.wireEvent)
       ? await verifySignedGameEvent(input.wireEvent, input.transportSender)
@@ -84,6 +90,9 @@ export class TranscriptRecorder<T> {
     const entry: TranscriptEntry<T> = {
       ...unsignedEntry,
       eventHash,
+      // relayTs is attached AFTER the hash is computed, so it never alters the transcript
+      // chain / gameCid — it is a trusted-clock sidecar for the reducer only. (D-1.)
+      ...(typeof input.relayTs === 'number' ? { relayTs: input.relayTs } : {}),
     };
 
     this.entries.push(entry);

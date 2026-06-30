@@ -106,12 +106,17 @@ const SUIT_TO_PHE = {
 };
 
 function decodeStandardCard(value) {
-  if (!Number.isInteger(value) || value < 1 || value > 52) {
-    throw new Error(`Decoded card must be an integer from 1 to 52, got ${value}`);
+  // The deck encodes each card as (cardIndex+1)^2 (perfect squares 4,9,...,2809): every card is a
+  // quadratic residue (so the public deck leaks nothing) and none lands on the 0/1 fixed point.
+  // Recover cardIndex (1..52) via the square root, then map to suit/rank. (Audit V1 + R4-11.)
+  const root = Math.round(Math.sqrt(value));
+  if (!Number.isInteger(value) || root < 2 || root > 53 || root * root !== value) {
+    throw new Error(`Decoded card must be an (index+1)^2 perfect square in 4..2809, got ${value}`);
   }
-  let rankCode = value % 13;
+  const cardIndex = root - 1; // 1..52
+  let rankCode = cardIndex % 13;
   if (rankCode === 0) rankCode = 13;
-  const suitCode = Math.floor((value - 1) / 13) + 1;
+  const suitCode = Math.floor((cardIndex - 1) / 13) + 1;
   return {
     suit: SUIT_DECODING[suitCode],
     rank: RANK_DECODING[rankCode],

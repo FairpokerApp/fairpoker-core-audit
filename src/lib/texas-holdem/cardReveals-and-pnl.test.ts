@@ -57,17 +57,17 @@ test('reducer session P&L (funds − boughtIn) is balanced and ignores illegal b
   expect((s.funds.get('B') ?? 0) - (s.boughtIn.get('B') ?? 0)).toBe(-2);
 });
 
-test('a VOIDED hand refunds every committed chip (the reducer must match the engine refund)', () => {
+test('a LEGITIMATELY voided hand (disconnect + cannotContinue) refunds every committed chip', () => {
   const settings = { initialFundAmount: 100, smallBlindAmount: 1, bigBlindAmount: 2 };
-  // Heads-up: A=SB posts 1, B=BB posts 2, A completes to 2 → both committed 2, betting moves
-  // to the flop (not a showdown, nobody folded). Then a hand/result arrives WITHOUT a normal
-  // resolution = the hand was voided (e.g. a disconnect). Every chip must come back.
+  // Heads-up: A=SB posts 1, B=BB posts 2, A completes to 2 → both committed 2. Then B drops
+  // (unreachable) and A declares the hand unfinishable (cannotContinue). That objective,
+  // signed evidence is what voids the hand — not a bare result — and every chip comes back.
   const log: ReducerEvent[] = [
     { type: 'newRound', from: 'A', round: 1, players: ['A', 'B'], settings },
-    { type: 'action/bet', from: 'A', round: 1, amount: 1 }, // SB completes to 2
-    { type: 'hand/result', from: 'A', round: 1 },           // voided mid-hand
+    { type: 'action/bet', from: 'A', round: 1, amount: 1 },        // SB completes to 2
+    { type: 'action/cannotContinue', from: 'A', round: 1 },        // declared unfinishable
   ];
-  const s = reduceTexasHoldem(log, new Map(), ['A', 'B']);
+  const s = reduceTexasHoldem(log, new Map(), ['A']);             // B is unreachable → legit void
   // Refunded to the start-of-hand stacks; nothing lost.
   expect(s.funds.get('A')).toBe(100);
   expect(s.funds.get('B')).toBe(100);
@@ -76,4 +76,21 @@ test('a VOIDED hand refunds every committed chip (the reducer must match the eng
   const boughtInTotal = Array.from(s.boughtIn.values()).reduce((a, b) => a + b, 0);
   expect(fundsTotal).toBe(boughtInTotal);
   expect(s.rounds.get(1)?.result?.how).toBe('Voided');
+});
+
+test('E-1: a bare hand/result can NOT void a live hand or claw back committed chips', () => {
+  const settings = { initialFundAmount: 100, smallBlindAmount: 1, bigBlindAmount: 2 };
+  // Both players fully connected (no disconnect, no unanimous void vote, no cannotContinue).
+  // A — about to be on the hook for 2 chips — forges a bare `hand/result` to try to "void" the
+  // hand and refund the pot. Post E-1 the reducer ignores it: the hand stays live, no refund.
+  const log: ReducerEvent[] = [
+    { type: 'newRound', from: 'A', round: 1, players: ['A', 'B'], settings },
+    { type: 'action/bet', from: 'A', round: 1, amount: 1 }, // SB completes to 2
+    { type: 'hand/result', from: 'A', round: 1 },           // forged "void & refund" attempt
+  ];
+  const s = reduceTexasHoldem(log, new Map(), ['A', 'B']);
+  // No refund: both committed 2 (funds 98 each), pot intact, hand NOT voided/resolved.
+  expect(s.funds.get('A')).toBe(98);
+  expect(s.funds.get('B')).toBe(98);
+  expect(s.rounds.get(1)?.result).toBeUndefined();
 });

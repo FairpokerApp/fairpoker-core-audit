@@ -1,5 +1,6 @@
 import {act, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import Staging, {buildNewTableUrl} from "./Staging";
+import NextHandCountdown from "./NextHandCountdown";
 import {WorkerRoomState} from "../lib/CloudflareRelayTransport";
 
 function workerRoomState(overrides: Partial<WorkerRoomState> = {}): WorkerRoomState {
@@ -393,7 +394,7 @@ test('finished hand asks the table shell to start the next hand after countdown'
   }
 });
 
-test('finished hand shows a recovery button if the next hand has not started after the countdown', () => {
+test('finished hand auto-retries (and still offers a recovery button) if the next hand has not started after the countdown', () => {
   jest.useFakeTimers();
   const startGame = jest.fn();
   const onNextHandCountdownComplete = jest.fn();
@@ -409,14 +410,54 @@ test('finished hand shows a recovery button if the next hand has not started aft
       roomState={workerRoomState()}
     />);
 
+    // countdown (5s -> 1 onComplete call) + recovery grace (3s) -> recovery button shows
     act(() => {
-      jest.advanceTimersByTime(12000);
+      jest.advanceTimersByTime(8200);
     });
-
     expect(screen.getByTestId('continue-button')).toBeVisible();
+    const callsWhenRecoveryShown = onNextHandCountdownComplete.mock.calls.length;
+
+    // Stall① root-cause fix: the recovery is driven automatically — no human click
+    // needed. Advancing past one auto-retry interval must fire another start request.
+    act(() => {
+      jest.advanceTimersByTime(2600);
+    });
+    expect(onNextHandCountdownComplete.mock.calls.length).toBeGreaterThan(callsWhenRecoveryShown);
+
+    // The manual button is still present as a fallback and still works.
     fireEvent.click(screen.getByTestId('continue-button'));
     expect(startGame).not.toHaveBeenCalled();
-    expect(onNextHandCountdownComplete).toHaveBeenCalledTimes(2);
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
+test('auto-recovery can be disabled, leaving only the manual recovery button', () => {
+  jest.useFakeTimers();
+  const onNextHandCountdownComplete = jest.fn();
+  try {
+    render(<NextHandCountdown
+      delaySeconds={5}
+      canRecover
+      autoRecover={false}
+      onRecover={() => onNextHandCountdownComplete({manual: true})}
+      onComplete={onNextHandCountdownComplete}
+    />);
+
+    act(() => {
+      jest.advanceTimersByTime(8200);
+    });
+    expect(screen.getByTestId('continue-button')).toBeVisible();
+    const callsWhenRecoveryShown = onNextHandCountdownComplete.mock.calls.length;
+
+    act(() => {
+      jest.advanceTimersByTime(6000);
+    });
+    // With auto-recovery off nothing fires on its own.
+    expect(onNextHandCountdownComplete.mock.calls.length).toBe(callsWhenRecoveryShown);
+
+    fireEvent.click(screen.getByTestId('continue-button'));
+    expect(onNextHandCountdownComplete.mock.calls.length).toBe(callsWhenRecoveryShown + 1);
   } finally {
     jest.useRealTimers();
   }

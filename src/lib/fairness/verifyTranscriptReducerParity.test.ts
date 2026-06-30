@@ -35,9 +35,12 @@ function decodeCode(value: number): StandardCard {
   return { suit: SUIT_DECODING[suitCode], rank: RANK_DECODING[rankCode] };
 }
 function makePlainFinalDeck(codesByOffset: Record<number, number>): string[] {
+  // codesByOffset are 1..52 card indices; encode each as (index+1)^2 to match the real client +
+  // verifier (Audit R4-11/R4-12) instead of feeding raw 1..52.
+  const enc = (code: number) => String((code + 1) * (code + 1));
   const used = new Set(Object.values(codesByOffset));
   const remaining = Array.from({ length: 52 }, (_, i) => i + 1).filter(c => !used.has(c));
-  return Array.from({ length: 52 }, (_, offset) => String(codesByOffset[offset] ?? remaining.shift()));
+  return Array.from({ length: 52 }, (_, offset) => enc(codesByOffset[offset] ?? remaining.shift()!));
 }
 const verifierPath = path.resolve(__dirname, "../../../scripts/verify-transcript.js");
 const tempDirs: string[] = [];
@@ -150,7 +153,7 @@ describe("offline verifier ⇄ live reducer chip-outcome parity (fold-out hands)
 });
 
 async function appendPublicDecrypts(recorder: TranscriptRecorder<Payload>, alice: EventSigner, bob: EventSigner, round: number, offsets: number[]): Promise<void> {
-  const decryptionKey = { d: '1', n: '997' }; // identity on plaintext codes ≤ 52
+  const decryptionKey = { d: '1', n: '10007' }; // identity on encoded card values ≤ 53^2 = 2809 (Audit R4-11)
   for (const cardOffset of offsets) {
     await appendSigned(recorder, alice, { type: 'card/decrypt', round, cardOffset, aliceOrBob: 'alice', decryptionKey });
     await appendSigned(recorder, bob, { type: 'card/decrypt', round, cardOffset, aliceOrBob: 'bob', decryptionKey });

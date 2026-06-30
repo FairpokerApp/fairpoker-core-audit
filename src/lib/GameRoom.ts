@@ -72,7 +72,7 @@ export interface MeshLike<T> {
   sendPublic(data: T): Promise<boolean>;
   sendPrivate(recipientPeerId: string, data: T): Promise<boolean>;
   on(event: 'ready', listener: (localPeerId: string) => void): void;
-  on(event: 'message', listener: (message: { type: 'public'; sender: string; data: T } | { type: 'private'; sender: string; recipient: string; data: T }, replay: boolean) => void): void;
+  on(event: 'message', listener: (message: { type: 'public'; sender: string; data: T; relayTs?: number } | { type: 'private'; sender: string; recipient: string; data: T; relayTs?: number }, replay: boolean) => void): void;
   on(event: 'peersChanged', listener: (peers: string[]) => void): void;
   on(event: 'leaderChanged', listener: (leaderId: string | null) => void): void;
   on(event: 'error', listener: (error: Error) => void): void;
@@ -170,7 +170,7 @@ export default class GameRoom<T> {
   }
 
   private async handleMeshMessage(
-    msg: { type: 'public'; sender: string; data: WireGameEvent<T> } | { type: 'private'; sender: string; recipient: string; data: WireGameEvent<T> },
+    msg: { type: 'public'; sender: string; data: WireGameEvent<T>; relayTs?: number } | { type: 'private'; sender: string; recipient: string; data: WireGameEvent<T>; relayTs?: number },
     replay: boolean,
   ) {
     const eventId = await this.getWireEventId(msg);
@@ -202,6 +202,7 @@ export default class GameRoom<T> {
       scope: msg.type,
       ...(msg.type === 'private' ? { recipient: msg.recipient } : {}),
       wireEvent: msg.data,
+      ...(typeof msg.relayTs === 'number' ? { relayTs: msg.relayTs } : {}),
     });
     this.emitter.emit('transcript', transcriptEntry as TranscriptEntry<unknown>);
 

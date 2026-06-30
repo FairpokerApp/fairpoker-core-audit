@@ -31,6 +31,7 @@ import {
 import {WorkerRoomPlayerState} from "../lib/CloudflareRelayTransport";
 import {useEncryptedShuffleStatus} from "../lib/useEncryptedShuffleStatus";
 import {buildCreateTableUrl, upsertJoinedTable} from "../lib/tableLobby";
+import {MAX_SEATS} from "../lib/texas-holdem/texasHoldemReducer";
 
 const NEXT_HAND_AUTO_START_DELAY_MS = 5000;
 const RETURN_TO_TABLE_PENDING_RESET_MS = 8000;
@@ -101,11 +102,13 @@ export default function TexasHoldemGameTable() {
     // Browser-authoritative: when the reducer has folded the signed log, the seated set
     // for the next hand comes from IT, not the worker's roomState. (Gated so the existing
     // worker-driven tests, which supply no `reduced`, keep exercising the worker path.)
+    // The reducer already caps this at MAX_SEATS; the worker fallback is capped here too
+    // so a stale/desynced worker view can never deal more than a standard 9-max table.
     if (reduced) {
       return reduced.seatedForNextHand;
     }
     if (!workerRoomState) {
-      return workerActivePlayerIds;
+      return workerActivePlayerIds.slice(0, MAX_SEATS);
     }
     const nextPlayers = workerRoomState.players
       .filter(player => (
@@ -117,7 +120,7 @@ export default function TexasHoldemGameTable() {
         && !player.sittingOut
       ))
       .map(player => player.peerId);
-    return nextPlayers.length ? Array.from(new Set(nextPlayers)) : workerActivePlayerIds;
+    return (nextPlayers.length ? Array.from(new Set(nextPlayers)) : workerActivePlayerIds).slice(0, MAX_SEATS);
   }, [reduced, workerActivePlayerIds, workerRoomState]);
   // Reduced seating mapped into the worker player shape, so every downstream
   // seat/rail/recovery derivation can read from the browser-authoritative reducer
@@ -252,7 +255,7 @@ export default function TexasHoldemGameTable() {
       }
       return reduced.seatedForNextHand;
     }
-    return workerRoomState ? workerRoomSeatedPlayers(workerRoomState) : (players ?? []);
+    return workerRoomState ? workerRoomSeatedPlayers(workerRoomState).slice(0, MAX_SEATS) : (players ?? []);
   }, [reduced, players, workerRoomState]);
   const playerListForActiveViews = useMemo(() => {
     if (reduced || workerRoomState) {
@@ -924,6 +927,7 @@ export default function TexasHoldemGameTable() {
               onRestartMatch={isTableHost ? restartMatchFromFinalReport : undefined}
           />
       }
+      <div className="poker-felt">
       {!reportMatchComplete && !canonicalCurrentRoundFinished && (
         <Opponents
           members={members}
@@ -988,6 +992,7 @@ export default function TexasHoldemGameTable() {
         onReturnToTable={requestReturnToTable}
         onNextHandCountdownComplete={localPlayerControlsNextHand ? startNextHandAfterCountdown : undefined}
       />
+      </div>
       {showMySeat && !matchRegistrationOpen && (
         <MySeat
           playerId={playerId}

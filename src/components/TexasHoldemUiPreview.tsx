@@ -31,6 +31,8 @@ type PreviewState =
   | 'four-showdown'
   | 'six-lobby'
   | 'six-river-turn'
+  | 'nine-river-turn'
+  | 'nine-flop-waiting'
   | 'chat-open'
   | 'chat-collapsed'
   | 'scoreboard'
@@ -76,6 +78,9 @@ const allPlayers = [
   'player-carmen',
   'player-diego',
   'player-echo',
+  'player-finn',
+  'player-gina',
+  'player-hugo',
 ];
 
 const c = (suit: StandardCard['suit'], rank: StandardCard['rank']): StandardCard => ({suit, rank});
@@ -93,6 +98,9 @@ const holes = new Map<string, Hole>([
   ['player-carmen', [c('Club', 'Q'), c('Diamond', 'Q')]],
   ['player-diego', [c('Spade', '4'), c('Heart', '4')]],
   ['player-echo', [c('Club', '8'), c('Diamond', '8')]],
+  ['player-finn', [c('Spade', '5'), c('Heart', '6')]],
+  ['player-gina', [c('Club', 'J'), c('Diamond', 'T')]],
+  ['player-hugo', [c('Spade', '2'), c('Heart', '3')]],
 ]);
 
 const names = new Map<string, string>([
@@ -102,6 +110,9 @@ const names = new Map<string, string>([
   ['player-carmen', 'Carmen'],
   ['player-diego', 'Diego'],
   ['player-echo', 'Echo'],
+  ['player-finn', 'Finn'],
+  ['player-gina', 'Gina'],
+  ['player-hugo', 'Hugo'],
 ]);
 
 const bankrolls = new Map<string, number>([
@@ -111,6 +122,9 @@ const bankrolls = new Map<string, number>([
   ['player-carmen', 73],
   ['player-diego', 140],
   ['player-echo', 95],
+  ['player-finn', 112],
+  ['player-gina', 67],
+  ['player-hugo', 154],
 ]);
 
 const scoreBoard = new Map<string, number>([
@@ -298,6 +312,34 @@ function pickState(state: PreviewState): PreviewModel {
       };
     case 'six-lobby':
       return {members: allPlayers, players: undefined, board: boardByStage.preflop, currentRoundFinished: true};
+    case 'nine-river-turn':
+      return {
+        members: allPlayers,
+        players: allPlayers,
+        board: boardByStage.river,
+        currentRoundFinished: false,
+        whoseTurn: me,
+        callAmount: 24,
+        actionsDone: actionMap([
+          [me, 12], ['player-alice', 24], ['player-bruno', 'fold'], ['player-carmen', 24],
+          ['player-diego', 'all-in'], ['player-echo', 24], ['player-finn', 'fold'],
+          ['player-gina', 24], ['player-hugo', 'fold'],
+        ]),
+      };
+    case 'nine-flop-waiting':
+      return {
+        members: allPlayers,
+        players: allPlayers,
+        board: boardByStage.flop,
+        currentRoundFinished: false,
+        whoseTurn: 'player-gina',
+        callAmount: 6,
+        actionsDone: actionMap([
+          [me, 'check'], ['player-alice', 6], ['player-bruno', 6], ['player-carmen', 'fold'],
+          ['player-diego', 6], ['player-echo', 'check'], ['player-finn', 6],
+          ['player-gina', 2], ['player-hugo', 'check'],
+        ]),
+      };
     case 'six-river-turn':
     case 'chat-open':
     case 'chat-collapsed':
@@ -428,6 +470,7 @@ export default function TexasHoldemUiPreview() {
           onRestartMatch={async () => {}}
         />
       )}
+      <div className="poker-felt">
       {!matchComplete && (
         <Opponents
           members={preview.members}
@@ -459,6 +502,7 @@ export default function TexasHoldemUiPreview() {
         roomState={preview.roomState}
         onReturnToTable={async () => {}}
       />
+      </div>
       {!matchComplete && !preview.isQueuedForNextHand && (
         <MySeat
           playerId={me}

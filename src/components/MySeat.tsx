@@ -79,21 +79,23 @@ export default function MySeat(props: {
   return (
     <div className="my-seat">
       <MyBetAmount playerId={playerId} actionsDone={actionsDone}/>
-      <MyActionButtons
-        playerId={playerId}
-        players={players}
-        whoseTurnAndCallAmount={whoseTurnAndCallAmount}
-        board={board}
-        hole={hole}
-        currentRoundFinished={currentRoundFinished}
-        isRejoinBlocked={isRejoinBlocked}
-        potAmount={potAmount}
-        bankrolls={bankrolls}
-        autoFoldTimeoutSeconds={autoFoldTimeoutSeconds}
-        audio={audio}
-        fireBet={actions.fireBet}
-        fireFold={actions.fireFold}
-      />
+      <div className="my-action-dock" data-testid="my-action-dock">
+        <MyActionButtons
+          playerId={playerId}
+          players={players}
+          whoseTurnAndCallAmount={whoseTurnAndCallAmount}
+          board={board}
+          hole={hole}
+          currentRoundFinished={currentRoundFinished}
+          isRejoinBlocked={isRejoinBlocked}
+          potAmount={potAmount}
+          bankrolls={bankrolls}
+          autoFoldTimeoutSeconds={autoFoldTimeoutSeconds}
+          audio={audio}
+          fireBet={actions.fireBet}
+          fireFold={actions.fireFold}
+        />
+      </div>
       <MyPlayerAvatar
         playerId={playerId}
         names={names}

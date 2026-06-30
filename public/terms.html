@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh" data-lang="zh">
+<html lang="zh" data-lang="zh" data-title-zh="Fair Poker — 服务条款" data-title-en="Fair Poker — Terms of Service">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -176,7 +176,8 @@
         <p>我们可能不时更新本条款。重大变更将通过更新本页"最后更新"日期并在适当情况下提供显著提示的方式公布。变更生效后继续使用本服务，即表示你接受更新后的条款。</p>
 
         <h2 id="law">14. 适用法律与争议</h2>
-        <p>在不与你居住地强制性消费者保护法相抵触的前提下，本条款受运营方主要营业地所适用的法律管辖。若你作为消费者，你所在国家／地区的强制性法律赋予你的权利不受影响。双方应首先尝试通过 <a href="mailto:support@fairpoker.app">support@fairpoker.app</a> 友好协商解决争议。</p>
+        <p>在不与你居住地强制性消费者保护法相抵触的前提下，本条款受运营方主要营业地所适用的法律管辖。若你作为消费者，你所在国家／地区的强制性法律赋予你的权利不受影响。双方应首先尝试通过 <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener"><span data-l="zh">开源代码</span><span data-l="en">Source code</span></a>
+        <a href="mailto:support@fairpoker.app">support@fairpoker.app</a> 友好协商解决争议。</p>
 
         <h2 id="contact">15. 联系</h2>
         <p>关于本条款的任何问题，请联系 <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>。</p>
@@ -295,5 +296,14 @@
         }
       })();
     </script>
-  </body>
+  
+    <script>
+      (function(){
+        var el=document.documentElement;
+        function applyTitle(){var l=el.getAttribute('data-lang')||'zh';var t=el.getAttribute('data-title-'+l)||el.getAttribute('data-title-zh');if(t)document.title=t;}
+        applyTitle();
+        try{new MutationObserver(applyTitle).observe(el,{attributes:true,attributeFilter:['data-lang']});}catch(e){}
+      })();
+    </script>
+</body>
 </html>

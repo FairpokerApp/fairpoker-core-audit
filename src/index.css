@@ -19,6 +19,15 @@ code {
   height: 100%;
   min-height: 400px;
   overflow-y: auto;
-  background-color: #07130F;
-  background-image: radial-gradient(ellipse at bottom, #103527, #07130F 72%);
+  background-color: #06120E;
+  /* Premium poker-felt: a warm emerald glow pooled where the cards sit (upper-
+     centre), an oval table sheen behind the middle band, and a deep vignette that
+     darkens the edges so the cards, chips and action deck read with real depth. */
+  background-image:
+    radial-gradient(86% 52% at 50% 40%, rgba(54, 196, 132, 0.30), rgba(54, 196, 132, 0) 70%),
+    radial-gradient(120% 78% at 50% 46%, rgba(22, 104, 72, 0.55), rgba(8, 26, 19, 0) 62%),
+    radial-gradient(150% 120% at 50% 120%, rgba(6, 32, 22, 0.92), rgba(4, 13, 10, 0) 70%),
+    radial-gradient(140% 100% at 50% -8%, rgba(13, 58, 41, 0.7), rgba(5, 14, 11, 0) 60%),
+    linear-gradient(180deg, #081711 0%, #06120E 52%, #040d0a 100%);
+  background-attachment: fixed;
 }

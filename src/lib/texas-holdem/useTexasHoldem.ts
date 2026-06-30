@@ -750,6 +750,10 @@ export default function useTexasHoldem() {
     await TexasHoldem.openRegistration(currentRound ?? TexasHoldem.getStateSnapshot().currentRound ?? null);
   }, [currentRound]);
 
+  const takeSeat = useCallback(async (seat: number) => {
+    await TexasHoldem.takeSeat(seat);
+  }, []);
+
   const actionsDoneFromEvents = useActionsDone(currentRound);
 
   const potAmountFromEvents = usePotAmount();
@@ -1010,6 +1014,7 @@ export default function useTexasHoldem() {
       openRegistration,
       voteToVoidHand,
       updateRoundSettings,
+      takeSeat,
     },
   };
 }

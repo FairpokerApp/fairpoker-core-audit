@@ -300,6 +300,17 @@ export default function TexasHoldemGameTable() {
     )
   );
 
+  const seatByPeer = reduced?.seatByPeer;
+  const mySeat = playerId ? seatByPeer?.get(playerId) : undefined;
+  // Real-poker seat discipline: a seat change is only allowed BETWEEN hands, never while a
+  // hand is live. The reducer enforces the same rule on the signed log; this flag also hides
+  // the open-seat "+" mid-hand so a no-op click is never even offered.
+  const canChangeSeat = !startBlockedByCanonicalHand;
+  const handleTakeSeat = useCallback((seat: number) => {
+    if (!canChangeSeat) return;
+    void actions.takeSeat(seat);
+  }, [actions, canChangeSeat]);
+
   const mainPotWinners = useMemo(() => {
     if (!currentRoundFinished || !lastWinningResult) {
       return null;
@@ -945,6 +956,9 @@ export default function TexasHoldemGameTable() {
           actionsDone={actionsDone}
           autoFoldTimeoutSeconds={roundSettings?.autoFoldTimeoutSeconds}
           roomState={workerRoomState}
+          seatByPeer={seatByPeer}
+          mySeat={mySeat}
+          onTakeSeat={canChangeSeat ? handleTakeSeat : undefined}
         />
       )}
       {!reportMatchComplete && !matchRegistrationOpen && canonicalCurrentRoundFinished && (lastWinningResult?.how === 'Showdown' || lastWinningResult?.how === 'LastOneWins' || lastWinningResult?.how === 'Voided') && (
@@ -964,6 +978,9 @@ export default function TexasHoldemGameTable() {
           actionsDone={null}
           autoFoldTimeoutSeconds={roundSettings?.autoFoldTimeoutSeconds}
           roomState={workerRoomState}
+          seatByPeer={seatByPeer}
+          mySeat={mySeat}
+          onTakeSeat={canChangeSeat ? handleTakeSeat : undefined}
         />
       )}
       <PokerTable

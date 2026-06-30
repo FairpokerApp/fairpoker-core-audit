@@ -76,8 +76,10 @@ export default function MySeat(props: {
     return group ? handRankLabel(group.handValue) : null;
   }, [currentRoundFinished, handRankLabel, lastWinningResult, playerId]);
 
+  const myFolded = Boolean(playerId && actionsDone?.get(playerId) === 'fold');
+
   return (
-    <div className="my-seat">
+    <div className={`my-seat${myTurnTimer ? ' my-seat-my-turn' : ''}${myFolded ? ' my-seat-folded' : ''}`}>
       <MyBetAmount playerId={playerId} actionsDone={actionsDone}/>
       <div className="my-action-dock" data-testid="my-action-dock">
         <MyActionButtons

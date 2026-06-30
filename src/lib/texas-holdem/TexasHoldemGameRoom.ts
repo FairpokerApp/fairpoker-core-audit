@@ -249,6 +249,14 @@ export interface CannotContinueEvent {
   round: number;
 }
 
+// Purely positional: the sender claims an absolute seat (0..8) around the table. It
+// never affects dealing or turn order — only where each player is drawn. Synced via
+// the signed log so every client agrees who sits where.
+export interface TakeSeatEvent {
+  type: 'action/takeSeat';
+  seat: number;
+}
+
 export interface UpdateSettingsEvent {
   type: 'action/updateSettings';
   settings: TexasHoldemRoundSettings;
@@ -265,7 +273,8 @@ export type TexasHoldemTableEvent =
   | OpenRegistrationEvent
   | HandResultEvent
   | VoidHandVoteEvent
-  | CannotContinueEvent;
+  | CannotContinueEvent
+  | TakeSeatEvent;
 
 function normalizeAutoFoldTimeoutSeconds(timeoutSeconds: number | undefined) {
   if (!Number.isFinite(timeoutSeconds) || timeoutSeconds === undefined) {
@@ -512,6 +521,10 @@ export class TexasHoldemGameRoom {
             // Informational "hand over" signal consumed by the relay/verifier; this
             // client already resolved the hand locally, so there is nothing to do.
             return;
+          case 'action/takeSeat':
+            // Purely positional — consumed by the browser-authoritative reducer for
+            // seat placement only; the stateful engine ignores it (no deal/turn impact).
+            return;
         }
       };
 
@@ -678,6 +691,19 @@ export class TexasHoldemGameRoom {
       data: {
         type: 'action/returnToTable',
         round,
+      },
+    });
+  }
+
+  // Positional only: claim an absolute seat around the table. Does not touch dealing
+  // or turn order — just where the player is drawn (synced via the signed log).
+  async takeSeat(seat: number) {
+    await this.gameRoom.emitEvent({
+      type: 'public',
+      sender: await this.gameRoom.peerIdAsync,
+      data: {
+        type: 'action/takeSeat',
+        seat,
       },
     });
   }

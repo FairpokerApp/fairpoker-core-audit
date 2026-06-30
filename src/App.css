@@ -9018,25 +9018,45 @@ select {
   justify-content: center;
 }
 
+/* During an actual hand the table must be ROCK STEADY — its size and position can't
+   shift as the hero's seat content (bet pill, showdown badges, deck) changes between
+   streets. So the felt takes a fixed height (independent of the hero band) and the hero
+   seat drops to the bottom, absorbing the slack. (Staging keeps the flexible felt, since
+   the setup form needs the room.) */
+.poker-felt:not(:has(.table-staging)) {
+  flex: 0 0 auto;
+  height: clamp(252px, 39dvh, 470px);
+}
+
+.App:not(:has(.table-staging)) .my-seat {
+  margin-top: auto;
+}
+
 /* A soft elliptical felt + rail behind the centre, so the oval reads as a real
    table surface rather than seats floating on the background. */
+/* The poker table itself: a real felt oval with a raised wooden-dark rail, the
+   eight seats ringing its rim and the board + pot resting on its centre. */
 .poker-felt::before {
   content: "";
   position: absolute;
   left: 50%;
-  top: 49%;
-  width: min(72%, 540px);
-  height: min(66%, 360px);
+  top: 43%;
+  width: min(74%, 580px);
+  height: min(62%, 340px);
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 38%, rgba(43, 190, 128, 0.20), rgba(8, 28, 20, 0) 70%),
-    radial-gradient(circle at 50% 50%, rgba(17, 86, 60, 0.5), rgba(6, 20, 15, 0.18) 72%);
+    radial-gradient(circle at 50% 34%, rgba(58, 210, 148, 0.26), rgba(10, 52, 37, 0) 66%),
+    radial-gradient(circle at 50% 52%, #1b6f4b 0%, #11553a 58%, #0b3b29 100%);
+  /* The rail: a thick dark ring with a soft inner felt-shadow and a faint gold seam. */
+  border: 7px solid #0a241a;
   box-shadow:
-    0 0 0 2px rgba(120, 230, 178, 0.10) inset,
-    0 0 0 12px rgba(6, 18, 14, 0.28),
-    0 0 0 13px rgba(168, 255, 214, 0.06),
-    0 40px 90px rgba(0, 0, 0, 0.4);
+    0 0 0 1px rgba(214, 178, 92, 0.18),
+    0 0 0 9px rgba(7, 22, 16, 0.55),
+    0 0 0 10px rgba(168, 255, 214, 0.05),
+    inset 0 2px 12px rgba(0, 0, 0, 0.38),
+    inset 0 0 70px rgba(0, 0, 0, 0.28),
+    0 42px 90px rgba(0, 0, 0, 0.46);
   pointer-events: none;
   z-index: 0;
 }
@@ -9044,12 +9064,169 @@ select {
 .poker-felt .table {
   flex: 0 1 auto;
   z-index: 1;
+  /* Lift the board into the upper-centre of the table so the bet ring (and the two
+     seats nearest the hero) have clear felt below it. */
+  position: relative;
+  top: -3%;
+}
+
+/* Standard poker layout: community cards in the upper-centre, the pot below them in
+   the betting area where the bet chips ring around it. */
+.poker-felt .table .community-cards {
+  order: 1;
+}
+
+.poker-felt .table .pot {
+  order: 2;
+}
+
+/* An open seat: a quiet dashed chair marker so the table reads as a full 9-max ring
+   even when only a few players are seated (and, soon, somewhere you can sit down). */
+.opponents-oval .opponent-empty {
+  z-index: 3;
+}
+
+.empty-seat {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px dashed rgba(168, 230, 200, 0.28);
+  background: radial-gradient(circle at 50% 38%, rgba(10, 30, 22, 0.5), rgba(6, 18, 14, 0.22));
+  box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* The "whose turn" spotlight: one warm light that GLIDES across the felt to whoever is
+   to act (the hero keeps their own ring timer). The left/top transition makes the light
+   sweep smoothly from seat to seat; a gentle breathing keeps it alive. */
+.opponents-oval .turn-spotlight {
+  position: absolute;
+  width: 116px;
+  height: 116px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(250, 214, 124, 0.5) 0%, rgba(245, 196, 96, 0.22) 36%, rgba(245, 196, 96, 0) 68%);
+  filter: blur(1px);
+  pointer-events: none;
+  z-index: 1;
+  transition: left 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), top 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation: spotlightBreathe 1.9s ease-in-out infinite;
+}
+
+@keyframes spotlightBreathe {
+  0%, 100% { opacity: 0.78; transform: translate(-50%, -50%) scale(0.94); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+}
+
+/* A folded player is clearly OUT of the hand: their avatar goes deeply grey + faded. */
+.opponents-oval .opponent-folded .avatar,
+.my-seat-folded .avatar {
+  filter: grayscale(1) brightness(0.46);
+  opacity: 0.4;
+  box-shadow: none;
+}
+
+.opponents-oval .opponent-folded .avatar-label,
+.opponents-oval .opponent-folded .bankroll,
+.my-seat-folded .avatar-label,
+.my-seat-folded .bankroll,
+.my-seat-folded .card {
+  opacity: 0.42;
+}
+
+/* The hero's own turn lights the hero's OWN avatar (same warm light as the opponents'
+   spotlight) — clear and unambiguous that it's your move. Their countdown ring stays. */
+.my-seat.my-seat-my-turn .avatar {
+  animation: heroTurnGlow 1.9s ease-in-out infinite;
+}
+
+@keyframes heroTurnGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 3px rgba(250, 214, 124, 0.5),
+      0 0 20px 4px rgba(245, 196, 96, 0.42),
+      0 12px 28px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(250, 214, 124, 0.72),
+      0 0 32px 9px rgba(245, 196, 96, 0.62),
+      0 12px 28px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+}
+
+/* A bet chip: springs out in front of the player, then slides into the pot and fades —
+   placed at the player's felt-% spot, translated to the pot via its --dx/--dy delta. */
+.opponents-oval .chip-fly {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 34%, #fce28e 0%, #e3bb62 52%, #b88a3c 100%);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  /* stacked rings below it read as a little pile of chips being swept in */
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.42),
+    inset 0 0 0 2px rgba(120, 88, 24, 0.22),
+    0 3px 0 -1px #ca9a4a, 0 5px 0 -1px #b1813a, 0 7px 0 -1px #9c6f30;
+  pointer-events: none;
+  z-index: 7;
+  animation: chipFly 560ms cubic-bezier(0.4, 0.02, 0.3, 1) forwards;
+}
+
+@keyframes chipFly {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  24% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% {
+    opacity: 0.12;
+    transform: translate(calc(-50% + var(--dx, 0) * 1cqw), calc(-50% + var(--dy, 0) * 1cqh)) scale(0.66);
+  }
+}
+
+@media screen and (max-width: 760px) {
+  .opponents-oval .turn-spotlight {
+    width: 92px;
+    height: 92px;
+  }
+}
+
+/* Keep the seats above the spotlight so it reads as a light shining ON them. */
+.opponents-oval .opponent {
+  z-index: 2;
+}
+
+/* An open seat the hero can click to sit / move to. */
+.empty-seat-button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: rgba(180, 240, 210, 0.55);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 160ms ease, color 160ms ease, background 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.empty-seat-button:hover,
+.empty-seat-button:focus-visible {
+  border-color: rgba(120, 230, 178, 0.7);
+  color: #bfffe0;
+  background: radial-gradient(circle at 50% 38%, rgba(31, 160, 106, 0.34), rgba(6, 18, 14, 0.3));
+  transform: scale(1.08);
+  outline: none;
 }
 
 /* In the oval the board lives in the CENTRE of the felt, so it must stay narrow
    enough that the left/right seats never collide with it. */
 .poker-felt .community-cards {
-  width: min(58%, 360px);
+  /* Hug the cards so the container box honestly bounds them (cards never overflow a
+     narrower box): the board's real width == the cards' total width, which keeps the
+     bet-ring spacing maths — and the occlusion checks — honest. */
+  width: max-content;
   gap: clamp(3px, 0.8vw, 8px);
 }
 
@@ -9058,6 +9235,23 @@ select {
   flex: 0 0 var(--card-w);
   width: var(--card-w);
   height: calc(var(--card-w) * 1.5);
+  /* Each slot flips in on mount — and remounts (so it replays) the moment it is dealt,
+     so the flop/turn/river "turn over" onto the felt. */
+  animation: communityFlipIn 380ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  transform-origin: 50% 60%;
+  backface-visibility: hidden;
+}
+
+/* A crowded ring (7+ players) shrinks each card so every seat's bet chip keeps clear
+   felt between the seat and the cards — a near-empty table keeps the board large. */
+.poker-felt:has(.opponents-oval-crowded) .community-cards .card {
+  --card-w: clamp(34px, 6.2vw, 52px);
+}
+
+@keyframes communityFlipIn {
+  0% { opacity: 0; transform: rotateY(78deg) rotateX(5deg) scale(0.9); }
+  55% { opacity: 1; }
+  100% { opacity: 1; transform: rotateX(5deg) scale(1); }
 }
 
 /* Opponents become an absolute layer that fills the felt; each seat is pinned to
@@ -9074,6 +9268,9 @@ select {
   gap: 0;
   z-index: 4;
   pointer-events: none;
+  /* Size container so bet/result chips can be placed at exact felt-% coordinates
+     (1cqw / 1cqh = 1% of the felt) on the inner bet ring. */
+  container-type: size;
 }
 
 .opponents-oval .opponent {
@@ -9109,10 +9306,32 @@ select {
 
 .opponents-oval .opponent .avatar {
   margin: 0 auto 1px;
+  padding: 2px;
+}
+
+/* Compact oval avatars (smaller than the legacy top-row avatars) so the side seats
+   never crowd each other vertically on a short table. Phones shrink further below. */
+.opponents-oval .opponent .avatar img {
+  width: 34px;
+  height: 34px;
+}
+
+/* Tuck the connection pip onto the lower edge INSIDE the avatar circle (the default
+   59px is tuned for the big hero head — on these 38px seat heads it would float well
+   below the avatar and cover the name / a neighbour). It must never stick out. */
+.opponents-oval .opponent .avatar-heartbeat {
+  top: 27px;
+}
+
+.opponents-oval .opponent .avatar-label {
+  margin: 1px 0 0;
+  font-size: 12px;
+  line-height: 1.1;
 }
 
 .opponents-oval .opponent .bankroll {
   margin: 1px auto 0;
+  font-size: 12px;
   line-height: 1.1;
 }
 
@@ -9138,42 +9357,91 @@ select {
   pointer-events: none;
 }
 
-/* At showdown the revealed hand IS the seat's headline: the avatar steps aside
-   (keeping its footprint so nothing reflows) and the two cards take its place,
-   with the name + result reading clearly underneath. */
-.opponents-oval.opponents-oval-showdown .opponent .avatar {
+/* At showdown the revealed hand IS the seat's headline. The seat is pared to just
+   the two cards (taking the avatar's place) plus the win/loss chip on the bet ring —
+   the name, stack and rank badge hide for the few seconds of the reveal so nothing
+   can overlap the cards. */
+.opponents-oval.opponents-oval-showdown .opponent .avatar,
+.opponents-oval.opponents-oval-showdown .opponent .avatar-label,
+.opponents-oval.opponents-oval-showdown .opponent .bankroll,
+.opponents-oval.opponents-oval-showdown .opponent .hand-rank-badge {
   opacity: 0;
+  visibility: hidden;
 }
 
 .opponents-oval.opponents-oval-showdown .opponent .hand-cards {
-  top: -3px;
+  top: -10px;
 }
 
 .opponents-oval.opponents-oval-showdown .opponent .card {
-  --card-w: 34px;
-  width: 34px;
-  height: 51px;
+  --card-w: 32px;
+  width: 32px;
+  height: 48px;
   margin: 0 1px;
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5);
 }
 
-.opponents-oval .opponent .bet-amount {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 50%;
-  transform: translateX(-50%);
-  margin: 0;
-  white-space: nowrap;
+/* One clean, modern card face for EVERY card (hero, community and opponents): a single
+   big rank with its suit right beneath it, centred and filling the card. Scales with
+   --card-w, so it reads from a 24px opponent card up to the hero's hand. (Card backs are
+   untouched — they have no corner element.) */
+.playing-card .card-center-suit,
+.playing-card .card-corner-bottom {
+  display: none;
 }
 
+.playing-card {
+  background: linear-gradient(160deg, #ffffff 0%, #f3f6f9 100%);
+}
+
+.playing-card .card-corner-top {
+  position: absolute;
+  inset: 0;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0;
+  text-shadow: none;
+}
+
+.playing-card .card-corner-top b {
+  font-size: calc(var(--card-w, 72px) * 0.56);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+}
+
+.playing-card .card-corner-top i {
+  margin-top: calc(var(--card-w, 72px) * 0.03);
+  font-size: calc(var(--card-w, 72px) * 0.4);
+  line-height: 1;
+}
+
+/* At showdown the win/loss chip sits directly UNDER the revealed cards, inside the
+   seat's own column (not pushed inward on the bet ring), so it can't overlap the
+   cards or reach across into a neighbour. */
+.opponents-oval.opponents-oval-showdown .opponent .chip-delta {
+  top: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* The live bet (and, at showdown, the win/loss + hand-rank) sit on the inner bet
+   ring — on the felt in front of the player — so they never overlap the seat's own
+   name/stack or any neighbouring seat. Placed at an exact felt coordinate via the
+   seat's --bet-cx/--bet-cy delta in container-query units. */
+.opponents-oval .opponent .bet-amount,
 .opponents-oval .opponent .hand-rank-badge,
 .opponents-oval .opponent .chip-delta {
   position: absolute;
-  top: calc(100% + 2px);
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(calc(-50% + var(--bet-cx, 0) * 1cqw), calc(-50% + var(--bet-cy, 0) * 1cqh));
   margin: 0;
-  z-index: 3;
+  white-space: nowrap;
+  z-index: 6;
 }
 
 @media screen and (max-width: 760px) {
@@ -9191,25 +9459,32 @@ select {
       0 26px 60px rgba(0, 0, 0, 0.4);
   }
 
-  /* On a phone the oval is tall + narrow; keep seats slim so the side seats
-     clear the centred board and never run off the screen edge. */
+  /* On a phone the oval is tall + narrow; the seat box is kept SMALL (≈42px:
+     mini avatar + one tight name + stack line) so up to four seats can stack down
+     each side of a short felt without their boxes ever touching. */
   .opponents-oval .opponent {
-    max-width: 72px;
+    max-width: 66px;
   }
 
   .opponents-oval .opponent .avatar {
-    margin: 0 auto 1px;
-    padding: 2px;
+    margin: 0 auto;
+    padding: 1px;
   }
 
   .opponents-oval .opponent .avatar img {
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Phone seat heads are 28px — tuck the connection pip onto the lower edge INSIDE the
+     circle so it never floats out of the avatar or covers a neighbouring seat. */
+  .opponents-oval .opponent .avatar-heartbeat {
+    top: 18px;
   }
 
   .opponents-oval .opponent .avatar-label {
-    margin: 1px 0 0;
-    max-width: 72px;
+    margin: 0;
+    max-width: 66px;
     overflow: hidden;
     font-size: 9px;
     line-height: 1.05;
@@ -9220,21 +9495,20 @@ select {
   .opponents-oval .opponent .bankroll {
     margin: 0 auto;
     font-size: 9px;
-    line-height: 1.1;
+    line-height: 1.05;
   }
 
-  /* Keep each opponent's live bet compact so it can't jut sideways into the
-     neighbouring seat in the dense 9-max ring. */
+  /* Live bet: a tight chip in front of the player, slim enough to sit in the gap
+     between the seat and the board in the dense 9-max ring. */
   .opponents-oval .opponent .bet-amount {
-    margin: 1px auto 0;
-    padding: 1px 6px;
-    font-size: 9px;
-    gap: 3px;
+    padding: 1px 4px;
+    font-size: 8px;
+    gap: 2px;
   }
 
   .opponents-oval .opponent .bet-amount .chip {
-    width: 11px;
-    height: 11px;
+    width: 8px;
+    height: 8px;
   }
 
   /* Phone showdown: revealed opponent cards, readable but compact. */
@@ -9245,10 +9519,17 @@ select {
   }
 
   .poker-felt .community-cards {
-    width: min(58%, 220px);
+    width: max-content;
   }
 
   .poker-felt .community-cards .card {
-    --card-w: clamp(34px, 11vw, 46px);
+    --card-w: clamp(30px, 9vw, 38px);
+  }
+
+  /* Phone + crowded ring: shrink each card hard so the wide board still leaves clear
+     felt for the left/right seats' bet chips (measured at the settled card size, not
+     mid flip-in). */
+  .poker-felt:has(.opponents-oval-crowded) .community-cards .card {
+    --card-w: clamp(23px, 6.5vw, 30px);
   }
 }

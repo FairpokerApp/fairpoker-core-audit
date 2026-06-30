@@ -90,6 +90,8 @@ export interface ReducedTableState {
   knownPeers: Set<string>; // every peer ever seen in the log or currently connected
   seatPlayers: SeatPlayer[]; // every known peer with a resolved seat status
   seatedForNextHand: string[]; // peers eligible to play the next hand
+  seatChoices: Map<string, number>; // raw chosen seat (0..SEAT_COUNT-1) per peer, from action/takeSeat
+  seatByPeer: Map<string, number>; // resolved absolute seat per seated peer (chosen, else auto-filled)
   missingPlayers: string[]; // current-hand players unreachable right now
   playable: boolean; // >= 2 seated players ⇒ a hand can start/continue
   _currentEventRelayTs?: number; // transient: relayTs of the event currently being applied (D-1)
@@ -156,6 +158,7 @@ export interface ReducerEvent {
     | 'action/openRegistration'
     | 'action/voidHandVote'
     | 'action/cannotContinue'
+    | 'action/takeSeat'
     | 'hand/result';
   from?: string; // signed sender
   round?: number | null;
@@ -164,8 +167,14 @@ export interface ReducerEvent {
   players?: string[]; // newRound seat order
   settings?: TexasHoldemRoundSettings; // newRound settings
   approve?: boolean; // voidHandVote approval
+  seat?: number; // takeSeat: chosen absolute seat index (purely positional; see SEAT_COUNT)
   relayTs?: number; // relay server receive-timestamp (trusted clock for auto-fold timing; D-1)
 }
+
+// A standard 9-handed table has 9 absolute seat positions (0..8). Seat choice is purely
+// positional — where a player sits around the oval — and never affects dealing or turn
+// order (which stay driven by the signed action log).
+export const SEAT_COUNT = 9;
 
 function emptyState(): ReducedTableState {
   return {
@@ -181,6 +190,8 @@ function emptyState(): ReducedTableState {
     knownPeers: new Set(),
     seatPlayers: [],
     seatedForNextHand: [],
+    seatChoices: new Map(),
+    seatByPeer: new Map(),
     missingPlayers: [],
     playable: false,
   };
@@ -635,6 +646,28 @@ function applyEvent(state: ReducedTableState, event: ReducerEvent): void {
         note(state, event.from);
       }
       return;
+    case 'action/takeSeat': {
+      // Purely positional: record the sender's chosen seat (where they are DRAWN around the
+      // oval). Real-poker seat discipline, enforced deterministically from the log so every
+      // client agrees:
+      //   1. NO seat change while a hand is live — a takeSeat that lands mid-hand in the log
+      //      is ignored outright (not queued), so the table never reshuffles mid-deal.
+      //   2. You take the EXACT seat you clicked, or nothing — never a different one.
+      //   3. You cannot take a seat another PRESENT player already holds (first chooser keeps
+      //      it). A departed peer's stale reservation does not block the seat.
+      if (event.from === undefined || typeof event.seat !== 'number') return;
+      if (state.handInProgress) return; // (1) locked during a live hand
+      const seat = Math.floor(event.seat);
+      if (seat < 0 || seat >= SEAT_COUNT) return; // (2) only a real seat
+      note(state, event.from);
+      const heldByPresentOther = Array.from(state.seatChoices.entries()).some(
+        ([peer, s]) =>
+          peer !== event.from && s === seat && (state._connected?.has(peer) ?? true),
+      ); // (3)
+      if (heldByPresentOther) return;
+      state.seatChoices.set(event.from, seat);
+      return;
+    }
     case 'action/openRegistration':
       state.currentRound = null;
       state.handInProgress = false;
@@ -677,7 +710,7 @@ function applyEvent(state: ReducedTableState, event: ReducerEvent): void {
 const REDUCER_EVENT_TYPES = new Set<ReducerEvent['type']>([
   'newRound', 'action/bet', 'action/fold', 'action/autoFold',
   'action/sitOut', 'action/returnToTable', 'action/openRegistration',
-  'action/voidHandVote', 'action/cannotContinue', 'hand/result',
+  'action/voidHandVote', 'action/cannotContinue', 'action/takeSeat', 'hand/result',
 ]);
 
 // Map the recorded transcript (the ordered signed log the relay sequences) into the
@@ -705,6 +738,7 @@ export function transcriptToReducerEvents(
       players: payload.players,
       settings: payload.settings,
       approve: payload.approve,
+      seat: payload.seat,
       relayTs,
     });
   }
@@ -861,4 +895,52 @@ function computeSeating(state: ReducedTableState, connected: Set<string>): void 
   state.seatedForNextHand = seatPlayers.filter(p => p.seated).map(p => p.peerId);
   state.missingPlayers = Array.from(missing).sort();
   state.playable = state.seatedForNextHand.length >= 2;
+
+  // Resolve each at-the-table peer's absolute seat (positional only). Explicit choices
+  // (action/takeSeat, already de-duped in the log) win; everyone else fills the lowest
+  // free seat in peerId order, so every client derives the same arrangement.
+  const seatByPeer = new Map<string, number>();
+  const taken = new Set<number>();
+  const atTable = Array.from(new Set<string>([...state.seatedForNextHand, ...currentPlayers])).sort();
+  for (const peer of atTable) {
+    const chosen = state.seatChoices.get(peer);
+    if (chosen !== undefined && !taken.has(chosen)) {
+      seatByPeer.set(peer, chosen);
+      taken.add(chosen);
+    }
+  }
+  // Everyone without an explicit choice gets a STABLE home seat derived from their peerId
+  // (real-poker fixed seats): a player keeps the SAME chair no matter who else joins or
+  // leaves, and a vacated chair stays empty — no cosmetic reshuffle that makes the whole
+  // table appear to spin. Pure function of peerId + the seats already taken, so every
+  // client (and the verifier) derives the identical arrangement. Processed in sorted
+  // peerId order for a deterministic tie-break when two players hash to the same chair.
+  const rest = atTable.filter(peer => !seatByPeer.has(peer));
+  // During a live hand the players who were DEALT IN claim their home chair first, so a
+  // spectator arriving mid-hand can never (even via a rare hash collision) bump a seated
+  // player out of their chair — a dealt-in seat is locked for the whole hand.
+  const restOrdered = [...rest.filter(p => dealtIn.has(p)), ...rest.filter(p => !dealtIn.has(p))];
+  for (const peer of restOrdered) {
+    const home = stableHomeSeat(peer, taken);
+    if (home !== undefined) {
+      seatByPeer.set(peer, home);
+      taken.add(home);
+    }
+  }
+  state.seatByPeer = seatByPeer;
+}
+
+// A deterministic "home seat" for a peer: hash the peerId to a starting chair, then probe
+// forward to the next free chair. Depends only on the peerId and the already-taken set, so
+// it is identical on every client and STABLE — a player's chair does not move when other
+// players come or go (the only exception is a hash collision whose earlier holder leaves,
+// which is rare and still deterministic).
+function stableHomeSeat(peerId: string, taken: Set<number>): number | undefined {
+  let h = 0;
+  for (let i = 0; i < peerId.length; i++) h = (Math.imul(h, 31) + peerId.charCodeAt(i)) >>> 0;
+  for (let probe = 0; probe < SEAT_COUNT; probe++) {
+    const seat = (h + probe) % SEAT_COUNT;
+    if (!taken.has(seat)) return seat;
+  }
+  return undefined; // table already full (atTable is capped at MAX_SEATS <= SEAT_COUNT)
 }

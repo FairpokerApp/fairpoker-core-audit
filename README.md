@@ -82,16 +82,19 @@ transcript replay.
 ## Cryptographic Parameter Evidence
 
 The mental-poker SRA key size is not an 8-bit runtime setting. The core helper
-defines `DEFAULT_MENTAL_POKER_BITS = 128` and `MIN_MENTAL_POKER_BITS = 128` in
-`src/lib/secureMentalPoker.ts`; `createPlayer` normalizes through
-`normalizeMentalPokerBits` and rejects any value below the minimum before key
-generation. The room code in `src/lib/MentalPokerGameRoom.ts` calls
-`createPlayer` with `settings.bits ?? DEFAULT_MENTAL_POKER_BITS`.
+defines `DEFAULT_MENTAL_POKER_BITS = 1024`, `MIN_MENTAL_POKER_BITS = 1024`, and
+`MAX_MENTAL_POKER_BITS = 2048` in `src/lib/secureMentalPoker.ts`; `createPlayer`
+normalizes through `normalizeMentalPokerBits`, which clamps any value below the
+1024-bit floor up and any value above the 2048-bit ceiling down before key
+generation. The room code in `src/lib/MentalPokerGameRoom.ts` calls `createPlayer`
+with `settings.bits ?? DEFAULT_MENTAL_POKER_BITS`. Cards are encoded as quadratic
+residues shifted off the 0/1 fixed points, so SRA encryption leaks no
+quadratic-residue bit about any hidden card.
 
-Therefore, a review must not infer an 8-bit SRA game from stale cached source
-or old snippets. The current core source evidence is: default 128-bit SRA,
-minimum accepted 128-bit SRA, optional 256-bit SRA, and no legacy 8-bit fallback
-in the published source package.
+Therefore, a review must not infer an 8-bit or 256-bit SRA game from stale cached
+source or old snippets. The current core source evidence is: default 1024-bit SRA,
+minimum accepted 1024-bit SRA, a 2048-bit ceiling (a forged huge-bits request is
+capped, not run), and no legacy 8-bit fallback in the published source package.
 
 ## Signed Event Enforcement Evidence
 

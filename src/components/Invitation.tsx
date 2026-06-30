@@ -67,7 +67,6 @@ export default function Invitation(props: DataTestIdAttributes & {
         roomLinkInputRef.current?.focus();
         copyTextToClipboard(roomLink).then(() => setCopied(true));
       }}>{copied ? <b>{t('inviteCopied')}</b> : t('copyInviteShort')}</button>
-      <p className="invite-safety-note">{t('officialInviteWarning')}</p>
     </div>
   );
 }

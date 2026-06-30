@@ -485,7 +485,10 @@ export default function TexasHoldemUiPreview() {
           lastWinningResult={winningResult}
           scoreBoard={scoreBoard}
           currentRoundFinished={preview.currentRoundFinished}
-          actionsDone={preview.actionsDone ?? null}
+          actionsDone={preview.currentRoundFinished ? null : (preview.actionsDone ?? null)}
+          seatByPeer={new Map((players ?? []).map((p, i) => [p, Math.floor((i * 9) / (players?.length || 1))]))}
+          mySeat={Math.floor((Math.max(0, (players ?? []).indexOf(me)) * 9) / (players?.length || 1))}
+          onTakeSeat={(seat) => console.log('takeSeat', seat)}
         />
       )}
       <PokerTable

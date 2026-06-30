@@ -24,6 +24,31 @@ const SPOKEN_AUDIO_FILES: Record<SpokenAsset, string> = {
   bet: 'bet.wav',
 };
 
+const SOUND_PREF_KEY = 'fairpoker.gameSoundEnabled';
+
+function readInitialEnabled(): boolean {
+  try {
+    const stored = window.localStorage?.getItem(SOUND_PREF_KEY);
+    if (stored === 'off') {
+      return false;
+    }
+    if (stored === 'on') {
+      return true;
+    }
+  } catch {
+    // localStorage may be unavailable (private mode, etc.) — fall through to default.
+  }
+  return true; // Sound is ON by default.
+}
+
+function persistEnabled(enabled: boolean) {
+  try {
+    window.localStorage?.setItem(SOUND_PREF_KEY, enabled ? 'on' : 'off');
+  } catch {
+    // Ignore storage failures — the in-memory state is still authoritative.
+  }
+}
+
 function isChromeLike() {
   const ua = navigator.userAgent;
   return /Chrome\/|CriOS\/|Edg\//.test(ua) && !/Version\/[\d.]+ Safari\//.test(ua);
@@ -89,7 +114,7 @@ function spokenAudioUrl(phrase: SpokenAsset) {
 }
 
 export function useGameAudio() {
-  const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabled] = useState(readInitialEnabled);
   const contextRef = useRef<AudioContext | null>(null);
   const spokenAudioRef = useRef<Map<SpokenAsset, HTMLAudioElement> | null>(null);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
@@ -172,24 +197,46 @@ export function useGameAudio() {
     }
   }, [enabled, playSpokenAudio]);
 
-  const toggle = useCallback(async () => {
+  const primeAudioPlayback = useCallback(async () => {
     if (!contextRef.current) {
       contextRef.current = createAudioContext();
     }
     ensureSpokenAudio();
     primeSpeechVoice();
     if (contextRef.current?.state === 'suspended') {
-      await contextRef.current.resume();
+      try {
+        await contextRef.current.resume();
+      } catch {
+        // Resuming can reject if there was no real user gesture — ignore and retry on the next one.
+      }
     }
+  }, [ensureSpokenAudio, primeSpeechVoice]);
+
+  const toggle = useCallback(async () => {
+    await primeAudioPlayback();
     const next = !enabled;
     setEnabled(next);
+    persistEnabled(next);
     if (next) {
       playTone('enable');
       if (!playSpokenAudio('sound on')) {
         speakNow('sound on', voiceRef.current);
       }
     }
-  }, [enabled, ensureSpokenAudio, playSpokenAudio, playTone, primeSpeechVoice]);
+  }, [enabled, playSpokenAudio, playTone, primeAudioPlayback]);
+
+  // Browsers block audio until the user interacts with the page. Since sound is ON by
+  // default, prime (create + resume) the audio context on the first user gesture so the
+  // in-game tones and spoken actions can actually play without the user touching the toggle.
+  useEffect(() => {
+    const events: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'touchstart'];
+    const handler = () => {
+      void primeAudioPlayback();
+      events.forEach(eventName => window.removeEventListener(eventName, handler));
+    };
+    events.forEach(eventName => window.addEventListener(eventName, handler, {passive: true}));
+    return () => events.forEach(eventName => window.removeEventListener(eventName, handler));
+  }, [primeAudioPlayback]);
 
   useEffect(() => () => {
     window.speechSynthesis?.cancel();

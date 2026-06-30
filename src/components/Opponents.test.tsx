@@ -107,12 +107,14 @@ test('highlights the opponent whose turn it is', () => {
   expect(highlighted).toBeInTheDocument();
 });
 
-test('shows a turn timer on the opponent whose turn it is', () => {
-  render(
+test('lights the active opponent with the gliding turn spotlight (no timer badge on their head)', () => {
+  const {container} = render(
     <Opponents {...baseProps} players={['p1', 'p2', 'p3']} whoseTurn="p2" autoFoldTimeoutSeconds={20} />
   );
 
-  expect(screen.getByTestId('turn-timer-badge')).toHaveTextContent('20');
+  // The opponent in the oval is lit by the moving spotlight, not a countdown badge.
+  expect(container.querySelector('.turn-spotlight')).toBeInTheDocument();
+  expect(screen.queryByTestId('turn-timer-badge')).toBeNull();
 });
 
 test('does not apply winner frame to winning opponent', () => {

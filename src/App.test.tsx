@@ -93,7 +93,7 @@ test('shows the merged account form on the game client entry page', async () => 
   render(<App />);
 
   expect(await screen.findByText('进入牌桌')).toBeInTheDocument();
-  expect(screen.getByText(/新账号自动开通，首批永久免费/)).toBeInTheDocument();
+  expect(screen.getByText(/新账号自动开通/)).toBeInTheDocument();
   expect(screen.queryByText(/换浏览器回来，用同一账号继续/)).not.toBeInTheDocument();
   expect(screen.queryByText('可找回牌局')).not.toBeInTheDocument();
   expect(screen.getByPlaceholderText('3-24 位')).toBeInTheDocument();

@@ -1869,11 +1869,16 @@ export class TexasHoldemGameRoom {
     // and reducer reach an identical result.
     const deckReady = this.mentalPokerGameRoom.isDeckReadyForRound?.(e.round) ?? true;
     if (!deckReady) {
-      const dealMissing = disconnected;
-      dealMissing.forEach(player => roundData.disconnectedPlayers.add(player));
-      roundData.pausedMissingPlayers = dealMissing;
-      const dealApprovals = players.filter(player => !dealMissing.includes(player));
-      this.voidHand(e.round, roundData, dealApprovals);
+      // Deal-phase void: refund the blinds and re-deal, but DO NOT sit anyone out or mark
+      // anyone "gone". A mid-shuffle refresh briefly drops the refresher from the roster, yet
+      // they reconnect within seconds and must keep their seat — sitting them out (or flagging
+      // them as having "left") wrongly ENDS the table over a transient refresh and shows a
+      // scary "a player left for good" notice. With nobody sat out, the next hand simply
+      // re-deals to whoever is present (a genuinely departed player is absent from the roster
+      // and naturally not dealt in). missing=[] mirrors the reducer's refundVoid(…, []), so the
+      // engine and the funds-truth reducer agree exactly.
+      roundData.pausedMissingPlayers = [];
+      this.voidHand(e.round, roundData, players);
       return;
     }
     if (disconnected.length === 0 && roundData.pausedMissingPlayers.length === 0) {

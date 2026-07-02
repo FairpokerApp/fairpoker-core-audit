@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {createPortal} from "react-dom";
 import {SIGNED_EVENT_KIND, SignedGameEvent} from "../lib/fairness/eventSigning";
 import {TranscriptEntry} from "../lib/fairness/transcript";
@@ -79,55 +79,32 @@ export default function EncryptedShuffleOverlay(props: {
     ? displayName(activePlayer, props.names, props.playerId, t('me'))
     : t('waiting');
 
-  const orbitCards = useMemo(() => Array.from({length: 10}, (_, index) => index), []);
-
   if (!props.visible) {
     return null;
   }
 
+  // 洗牌指示：从原来的全屏遮罩改成右上角一张小卡片（一副小牌在轻轻洗动 + 进度条 + x/n），
+  // 不再盖住牌桌、不打断节奏。玩家仍能清楚看到"正在多方加密洗牌、进度到哪了"，只是很小。
+  const total = Math.max(props.participants.length, 1);
   const overlay = (
-    <div className="shuffle-overlay" role="status" aria-live="polite" data-testid="shuffle-overlay">
-      <div className="shuffle-panel">
-        <div className="shuffle-visual" aria-hidden="true">
-          <div className="shuffle-ring">
-            {orbitCards.map(index => (
-              <span
-                key={index}
-                className="shuffle-card-particle"
-                style={{'--card-index': index} as React.CSSProperties}
-              />
-            ))}
-            <div className="shuffle-core">
-              <span />
-              <b>{completed.size}/{Math.max(props.participants.length, 1)}</b>
-            </div>
+    <div className="shuffle-overlay shuffle-toast" role="status" aria-live="polite" data-testid="shuffle-overlay">
+      <div className="shuffle-card" title={t('shuffleOverlayProof')}>
+        <span className="shuffle-badge" aria-hidden="true">
+          <i /><i /><i />
+        </span>
+        <div className="shuffle-card-body">
+          <div className="shuffle-card-titles">
+            <strong>{t('shuffleOverlayTitle')}</strong>
+            <small>{t('shuffleOverlayCurrent', {player: activeName})}</small>
           </div>
-        </div>
-        <div className="shuffle-copy">
-          <span className="shuffle-kicker">{t('shuffleOverlayKicker')}</span>
-          <strong>{t('shuffleOverlayTitle')}</strong>
-          <p>{t('shuffleOverlayCurrent', {player: activeName})}</p>
           <div className="shuffle-progress-track" aria-hidden="true">
             <i style={{'--progress': `${progress}%`} as React.CSSProperties} />
           </div>
+          <div className="shuffle-card-meta">
+            <span className="shuffle-kicker">{t('shuffleOverlayKicker')}</span>
+            <span className="shuffle-count">{completed.size}/{total}</span>
+          </div>
         </div>
-        <div className="shuffle-steps" aria-label={t('shuffleOverlaySteps')}>
-          {props.participants.map((participant, index) => {
-            const done = completed.has(index);
-            const active = index === activeIndex && completed.size < props.participants.length;
-            return (
-              <div
-                key={`${participant}-${index}`}
-                className={`shuffle-step${done ? ' done' : ''}${active ? ' active' : ''}`}
-              >
-                <span>{index + 1}</span>
-                <b>{displayName(participant, props.names, props.playerId, t('me'))}</b>
-                <small>{done ? t('shuffleOverlayDone') : active ? t('shuffleOverlayEncrypting') : t('shuffleOverlayWaiting')}</small>
-              </div>
-            );
-          })}
-        </div>
-        <small className="shuffle-proof-note">{t('shuffleOverlayProof')}</small>
       </div>
     </div>
   );

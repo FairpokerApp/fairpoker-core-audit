@@ -614,4 +614,93 @@ describe('real-crypto all-in refresh', () => {
     a2.engine.close();
     b.engine.close();
   }, 120000);
+
+  // THE OWNER'S NEWEST REPRO: refresh DURING the encrypted shuffle, before any hole card is
+  // dealt. startNewRound fires `start` (the shuffle begins) and then `newRound` immediately
+  // after — BEFORE the shuffle finishes — so the engine already knows about the hand, but the
+  // deck never finalizes: A (the shuffle's first participant) refreshes, its rebuilt engine
+  // replays `start` as replay=true (which resolves its player to null, so it can never (re)take
+  // a shuffle turn), and no deck/finalized is ever produced. Before the fix this DEADLOCKED
+  // forever (the deal-phase had no watchdog). After the fix the deal-phase watchdog fires
+  // (~12s) and the hand is VOIDED on BOTH sides with the blinds refunded — never a fold, so
+  // nobody wins or loses chips over a broken shuffle — and the table can re-deal.
+  test('MILESTONE 11 (OWNER REPRO): refresh DURING the shuffle (deck never finalizes) → no deadlock, hand VOIDS + refunds blinds', async () => {
+    const shared: GameEvent<AnyEvent>[] = [];
+    const a = await makePeer('A', 'room-A', shared);
+    const b = await makePeer('B', 'room-B', shared);
+    a.room.pair(b.room);
+    a.room.members = ['A', 'B'];
+    b.room.members = ['A', 'B'];
+    await a.mp.announceEncryptionKey();
+    await b.mp.announceEncryptionKey();
+    for (let i = 0; i < 20; i++) await flush();
+
+    // Start a hand — the encrypted shuffle BEGINS but we do NOT wait for hole cards.
+    await a.engine.startNewRound({ initialFundAmount: 100, smallBlindAmount: 1, bigBlindAmount: 2, bits: 1024, participants: ['A', 'B'] });
+    await waitFor(() => shared.some(e => (e.data as any)?.type === 'newRound'), 'newRound emitted (shuffle in progress)', 30000);
+    // The shuffle has NOT finalized yet (no hole cards dealt) — this is the interrupt window.
+    expect(shared.some(e => (e.data as any)?.type === 'deck/finalized')).toBe(false);
+
+    // === REFRESH A MID-SHUFFLE: rebuild (replay the incomplete, no-finalized window). The
+    //     deck can never finalize now, so the deal can never complete. ===
+    const a2 = await refreshPeer(a, 'room-A', shared, b, ['A', 'B'], 1);
+    // Confirm the deck genuinely never finalized for either side (the deadlock precondition).
+    expect(shared.some(e => (e.data as any)?.type === 'deck/finalized')).toBe(false);
+
+    // The deal-phase watchdog (~12s) must VOID the stalled hand on BOTH sides instead of
+    // deadlocking forever.
+    await waitFor(() => a2.engine.getStateSnapshot().winnersByRound.get(1)?.how === 'Voided', 'refreshed A voids the stalled deal', 60000);
+    await waitFor(() => b.engine.getStateSnapshot().winnersByRound.get(1)?.how === 'Voided', 'B voids the stalled deal', 60000);
+
+    // Blinds fully refunded — nobody wins or loses chips over a broken shuffle, and the two
+    // sides agree exactly (no fork). Each is back at the bought-in 100.
+    const fa = a2.engine.getStateSnapshot().bankrolls;
+    const fb = b.engine.getStateSnapshot().bankrolls;
+    expect(fa.get('A') ?? 0).toBe(100);
+    expect(fa.get('B') ?? 0).toBe(100);
+    expect(fb.get('A') ?? 0).toBe(100);
+    expect(fb.get('B') ?? 0).toBe(100);
+    a2.engine.close();
+    b.engine.close();
+  }, 120000);
+
+  // Completeness of the fix: a VOID is only useful if the table actually RECOVERS. After a
+  // mid-shuffle refresh voids hand 1, the refreshed A must be able to host a brand-new hand 2
+  // that shuffles, deals, and resolves normally on BOTH sides — proving the table isn't stuck
+  // in the voided state and the deal pipeline is healthy again.
+  test('MILESTONE 12: after a mid-shuffle-refresh VOID, the table recovers and plays a full next hand', async () => {
+    const shared: GameEvent<AnyEvent>[] = [];
+    const a = await makePeer('A', 'room-A', shared);
+    const b = await makePeer('B', 'room-B', shared);
+    a.room.pair(b.room);
+    a.room.members = ['A', 'B'];
+    b.room.members = ['A', 'B'];
+    await a.mp.announceEncryptionKey();
+    await b.mp.announceEncryptionKey();
+    for (let i = 0; i < 20; i++) await flush();
+
+    // Hand 1: refresh mid-shuffle → it voids (same as M11).
+    await a.engine.startNewRound({ initialFundAmount: 100, smallBlindAmount: 1, bigBlindAmount: 2, bits: 1024, participants: ['A', 'B'] });
+    await waitFor(() => shared.some(e => (e.data as any)?.type === 'newRound'), 'h1 newRound', 30000);
+    const a2 = await refreshPeer(a, 'room-A', shared, b, ['A', 'B'], 1);
+    await waitFor(() => a2.engine.getStateSnapshot().winnersByRound.get(1)?.how === 'Voided', 'h1 voids', 60000);
+    await waitFor(() => b.engine.getStateSnapshot().winnersByRound.get(1)?.how === 'Voided', 'h1 B voids', 60000);
+
+    // Hand 2: the refreshed A hosts a fresh, uninterrupted hand — it must shuffle, deal and
+    // resolve normally on both sides (the deal pipeline recovered).
+    await a2.engine.startNewRound({ initialFundAmount: 100, smallBlindAmount: 1, bigBlindAmount: 2, bits: 1024, participants: ['A', 'B'] });
+    await waitFor(() => (a2.engine.getStateSnapshot().holesByRound.get(2)?.size ?? 0) > 0, 'h2 holes (table recovered)', 60000);
+    await driveBetting({ A: a2, B: b }, a2, 2, (_who, fund) => fund);
+    await waitFor(() => !!a2.engine.getStateSnapshot().winnersByRound.get(2), 'h2 A resolves', 60000);
+    await waitFor(() => !!b.engine.getStateSnapshot().winnersByRound.get(2), 'h2 B resolves', 60000);
+    expect((a2.engine.getStateSnapshot().boardByRound.get(2) ?? []).length).toBe(5);
+    // No fork, chips conserved against whole buy-ins.
+    const fa = a2.engine.getStateSnapshot().bankrolls;
+    const fb = b.engine.getStateSnapshot().bankrolls;
+    expect(fa.get('A') ?? 0).toBe(fb.get('A') ?? 0);
+    expect(fa.get('B') ?? 0).toBe(fb.get('B') ?? 0);
+    expect(((fa.get('A') ?? 0) + (fa.get('B') ?? 0)) % 100).toBe(0);
+    a2.engine.close();
+    b.engine.close();
+  }, 120000);
 });

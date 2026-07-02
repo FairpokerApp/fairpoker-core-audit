@@ -7,7 +7,7 @@ import MyHandCards from "./MyHandCards";
 import {Board, Hole} from "../lib/rules";
 import {GameAudioControls} from "../lib/useGameAudio";
 import {WinningResult} from "../lib/texas-holdem/TexasHoldemGameRoom";
-import {useHandRankLabel} from "../lib/i18n";
+import {useHandRankLabel, useI18n} from "../lib/i18n";
 
 export default function MySeat(props: {
   playerId: string | undefined;
@@ -21,6 +21,8 @@ export default function MySeat(props: {
   mainPotWinners: Set<string> | null;
   lastWinningResult?: WinningResult;
   scoreDelta?: number;
+  /** 本场累计输赢（一直显示），与按手结算的 scoreDelta 不同。 */
+  netTotal?: number;
   currentRoundFinished: boolean;
   isRejoinBlocked?: boolean;
   connectionStatus?: 'good' | 'warn' | 'offline';
@@ -43,6 +45,7 @@ export default function MySeat(props: {
     players,
     lastWinningResult,
     scoreDelta,
+    netTotal,
     currentRoundFinished,
     isRejoinBlocked,
     connectionStatus,
@@ -59,6 +62,7 @@ export default function MySeat(props: {
     actions,
   } = props;
   const handRankLabel = useHandRankLabel();
+  const {t} = useI18n();
 
   const myTurnTimer = playerId && whoseTurnAndCallAmount?.whoseTurn === playerId && !currentRoundFinished
     ? {
@@ -115,6 +119,16 @@ export default function MySeat(props: {
         >{scoreDelta > 0 ? '+' : '-'}${Math.abs(scoreDelta)}</div>
       )}
       <MyBankroll playerId={playerId} players={players} bankrolls={bankrolls}/>
+      {netTotal !== undefined && (
+        <div
+          className={`session-pnl ${netTotal > 0 ? 'positive' : netTotal < 0 ? 'negative' : 'flat'}`}
+          title={t('netTotalTitle')}
+          data-testid="my-session-pnl"
+        >
+          <span className="session-pnl-tag">{t('netTotalTag')}</span>
+          <b>{netTotal > 0 ? '+' : netTotal < 0 ? '-' : ''}${Math.abs(netTotal)}</b>
+        </div>
+      )}
       <MyHandCards hole={hole}/>
     </div>
   );

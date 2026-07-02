@@ -300,7 +300,47 @@ export async function login(username: string, password: string) {
   return installSession(result.session, vault);
 }
 
-export async function enterAccount(username: string, password: string) {
+// Terms/consent version recorded alongside account creation. Bump when the
+// consent copy materially changes so the ledger shows which version was accepted.
+export const CONSENT_TERMS_VERSION = '2026-07-01';
+
+export type ReportCategory = 'real_money' | 'chip_dumping' | 'collusion' | 'harassment' | 'other';
+
+export interface ReportInput {
+  category: ReportCategory;
+  roomId?: string;
+  reportedPeerId?: string;
+  reportedUsername?: string;
+  detail?: string;
+}
+
+// Submit a player report (suspected real-money gambling, chip dumping,
+// collusion, harassment) to the operator backend, authenticated by the current
+// member session. Never blocks or touches gameplay.
+export async function submitReport(input: ReportInput): Promise<void> {
+  const session = getActiveAuthSession();
+  if (!session) {
+    throw new Error(authText('reportNeedLogin'));
+  }
+  const response = await fetch(`${getAuthApiBase()}/report`, {
+    method: 'POST',
+    headers: {
+      'authorization': `Bearer ${session.token}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error || `Report failed (${response.status}).`);
+  }
+}
+
+export async function enterAccount(
+  username: string,
+  password: string,
+  options?: { agreedToTerms?: boolean },
+) {
   const usernameError = validateUsername(username);
   const passwordError = validatePassword(password);
   if (usernameError || passwordError) {
@@ -317,6 +357,10 @@ export async function enterAccount(username: string, password: string) {
     username: cleanUsername(username),
     authSecret,
     vault: encryptedVault,
+    // Compliance: record that the 18+/no-real-money terms were accepted at entry.
+    consent: options?.agreedToTerms
+      ? { agreed: true, termsVersion: CONSENT_TERMS_VERSION }
+      : undefined,
   });
   const activeVault = result.created
     ? vault

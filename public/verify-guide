@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh" data-lang="zh">
+<html lang="zh" data-lang="zh" data-title-zh="Fair Poker — 独立验证指南" data-title-en="Fair Poker — Independent verification guide">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Fair Poker — 亲手复验一局牌（教程）</title>
+    <title>Fair Poker — 独立验证指南</title>
     <meta name="description" content="Step-by-step guide: match the deployed client to the public core source, then replay a hand transcript with the local verifier." />
     <meta name="theme-color" content="#07130F" />
     <style>
@@ -62,9 +62,9 @@
       <div class="fp-nav-right">
         <div class="fp-nav-links">
           <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
-          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
-          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
-          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span></a>
+          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">透明度报告</span><span data-l="en">Transparency</span></a>
+          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">独立验证</span><span data-l="en">Verification</span></a>
+          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全白皮书</span><span data-l="en">Security Whitepaper</span></a>
         </div>
         <div class="fp-langs" id="fp-langs" aria-label="Language">
           <button type="button" data-set="zh">中文</button>
@@ -75,14 +75,14 @@
 
     <main>
       <div data-l="zh">
-        <span class="fp-eyebrow">复验教程 · Verify</span>
-        <h1>亲手复验一局牌</h1>
-        <p class="fp-lead">两步走：先确认线上客户端与公开核心源码一致，再用本地 verifier 重放你下载的牌局记录。不需要相信我们——你自己跑一遍。</p>
+        <span class="fp-eyebrow">独立验证 · Verification</span>
+        <h1>独立验证指南</h1>
+        <p class="fp-lead">三件事你都能自己验，不用相信我们：① 线上跑的游戏，就是这份公开源码（重新编译比对）；② 每手牌结束自动跑 4 灯公平校验；③ 任何一手都能下载牌局记录、在本机重放复验。</p>
       </div>
       <div data-l="en">
-        <span class="fp-eyebrow">Verify</span>
-        <h1>Verify a hand yourself</h1>
-        <p class="fp-lead">Two steps: first confirm the live client matches the public core source, then replay your downloaded hand transcript with the local verifier. You don't have to trust us — run it yourself.</p>
+        <span class="fp-eyebrow">Verification</span>
+        <h1>Independent verification guide</h1>
+        <p class="fp-lead">Three things you can verify yourself, no trust required: ① the live game is built from this public source (rebuild &amp; compare); ② every hand auto-runs a four-light fairness audit; ③ any hand can be downloaded and replayed locally.</p>
       </div>
 
       <section data-release-facts>
@@ -97,31 +97,123 @@
         </dl>
       </section>
 
-      <div data-l="zh">
-        <h3><span class="fp-step" aria-hidden="true">1</span>确认线上前端 = 公开核心代码</h3>
-        <ol>
-          <li>确认你进入的牌局客户端 CID 等于上面的 Game client CID。用 <code>ipfs.io</code>、<code>dweb.link</code> 等不同网关打开同一 CID，应得到同一份前端文件。</li>
-          <li>下载核心源码审计包，校验压缩包 SHA256 是否等于上面的 Archive SHA256。</li>
-          <li>解压后重新生成源码指纹，确认输出与上面的 Source fingerprint 一致。</li>
-        </ol>
-        <pre><code>curl -L -o release.json https://fairpoker.app/source/release.json
-SOURCE_ARCHIVE_URL=$(node -e "console.log(require('./release.json').archiveUrl)")
-ARCHIVE_SHA256=$(node -e "console.log(require('./release.json').archiveSha256.replace(/^sha256:/, ''))")
+      <section id="reproduce">
+        <h2><span data-l="zh">官方客户端开源了——但怎么证明「线上 IPFS 上跑的」就是这份源码？</span><span data-l="en">The client is open source — but how do you prove the code running on IPFS is this exact source?</span></h2>
 
+        <div data-l="zh">
+          <p>先说破一个最常见的误会：上面「发布事实」里有<strong>两个不同的 CID</strong>，它们<strong>本来就不一样、也永远不该相等</strong>——别拿这两个互相比。</p>
+          <ul>
+            <li><strong>牌局客户端 CID（Game client CID）</strong>＝编译好、能直接玩的成品（好比<strong>烤好的蛋糕</strong>）。</li>
+            <li><strong>核心源码包 CID（Source package CID）</strong>＝给人阅读、审查的源代码（好比<strong>面粉和鸡蛋</strong>）。</li>
+          </ul>
+          <p>面粉的编号和蛋糕的编号永远不会一样，这很正常。证明「线上＝源码」靠的是<strong>各自对上两次</strong>：</p>
+          <ol>
+            <li><strong>比对 ①</strong>：你下载的源码包算出的 CID ＝ 公布的 Source package CID → 说明你读的源码<strong>没被掉包</strong>。</li>
+            <li><strong>比对 ②</strong>：你用这份源码在固定 Docker 环境里重新编译出的 CID ＝ 公布的 Game client CID → 说明线上跑的游戏<strong>正是这份源码编出来的</strong>。</li>
+          </ol>
+          <p>两个都对上 ＝ <strong>你能读的（源码）就是线上真在跑的（游戏）</strong>。官方没法「给你看一份干净代码、却偷偷跑一份作弊代码」——任何人重编都会当场对不上、立刻穿帮。</p>
+
+          <h3><span class="fp-step" aria-hidden="true">1</span>读取官方发布参数</h3>
+          <pre><code>curl -L -o release.json https://fairpoker.app/source/release.json
+# 看：gameClientCid、currentSourceRelease.ipfsCid、archiveSha256，
+#     以及 reproducibleGameClientBuild.buildEnv（含 SOURCE_DATE_EPOCH）</code></pre>
+
+          <h3><span class="fp-step" aria-hidden="true">2</span>下载源码包并校验（比对 ①）</h3>
+          <pre><code>SOURCE_ARCHIVE_URL=$(node -e "console.log(require('./release.json').archiveUrl)")
 curl -L -o fair-poker-source.tar.gz "$SOURCE_ARCHIVE_URL"
 
+# (a) SHA256 应等于 release.json 的 archiveSha256
 shasum -a 256 fair-poker-source.tar.gz
-# 应等于 $ARCHIVE_SHA256
 
-mkdir fair-poker-source
-tar -xzf fair-poker-source.tar.gz -C fair-poker-source --strip-components=1
+# (b) 源码包 CID 应等于 release.json 的 currentSourceRelease.ipfsCid  ← 比对 ①
+ipfs add -rQ --cid-version=1 --raw-leaves --only-hash fair-poker-source.tar.gz</code></pre>
+
+          <h3><span class="fp-step" aria-hidden="true">3</span>在固定 Docker 环境里重新编译</h3>
+          <pre><code>tar -xzf fair-poker-source.tar.gz   # → fair-poker-source/
 cd fair-poker-source
-npm ci
-npm run generate:release-metadata
-grep sourceFingerprint src/generated/releaseMetadata.ts</code></pre>
-        <p>如果 SHA256 与 Source fingerprint 都一致，说明公开的发牌、洗牌、加密、解密、签名、transcript 与 verifier 代码没有被替换。</p>
 
-        <h3><span class="fp-step" aria-hidden="true">2</span>复验一局牌</h3>
+# 用 release.json 的 reproducibleGameClientBuild.buildEnv 里的值：
+export SOURCE_DATE_EPOCH=...                 # buildEnv.SOURCE_DATE_EPOCH
+export REACT_APP_SOURCE_ARCHIVE_IPFS_CID=...
+export REACT_APP_SOURCE_ARCHIVE_SHA256=...
+export REACT_APP_SOURCE_ARCHIVE_URL=...
+
+bash scripts/reproducible-game-build.sh ../fair-poker-source.tar.gz</code></pre>
+
+          <h3><span class="fp-step" aria-hidden="true">4</span>比对结果（比对 ②）</h3>
+          <p>脚本最后会打印一个 <strong>Game client CID</strong>。它应当等于上面「发布事实」里的 Game client CID，也等于你实际进入游戏时浏览器加载的那个 CID。</p>
+
+          <h3>每个比对结果说明什么</h3>
+          <dl class="fp-dl">
+            <dt>比对 ① 对上</dt><dd>你正在读的源码＝官方公布的源码，没被掉包。</dd>
+            <dt>比对 ② 对上</dt><dd>线上正在跑的游戏＝这份源码编出来的，没换成别的。</dd>
+            <dt>① + ② 都对上</dt><dd>眼见（源码）即所得（线上游戏）。官方没有藏一手的空间。</dd>
+          </dl>
+
+          <div class="fp-callout"><p><strong>不想编译？两个更轻量的快速自查：</strong>① 用 <code>ipfs.io</code>、<code>dweb.link</code> 等不同网关打开同一个 Game client CID，应得到同一份文件（内容寻址，改一个字 CID 就变）；② 牌桌「安全牌局」面板会在运行时自动比对你加载的客户端，显示「已锁定 / 不符 / 未固定」。</p></div>
+          <div class="fp-callout"><p><strong>诚实边界：</strong>这套复现证明的是「玩家浏览器里跑的客户端」。后端中转服务器（worker）不在复现范围内——但你不需要信任它：上面公开的客户端源码已经证明 worker 只是一个「哑巴中转」，只看得到密文，既不能发牌、不能踢人、也不能改结果。完整说明见 <a href="https://fairpoker.app/source/REPRODUCIBLE_BUILD.md">REPRODUCIBLE_BUILD.md</a>。</p></div>
+        </div>
+
+        <div data-l="en">
+          <p>First, the most common misconception: the «Release facts» above show <strong>two different CIDs</strong>, and they are <strong>different by design and never equal</strong> — do not compare these two to each other.</p>
+          <ul>
+            <li><strong>Game client CID</strong> = the compiled, ready-to-play build (the <strong>baked cake</strong>).</li>
+            <li><strong>Source package CID</strong> = the readable source code you audit (the <strong>flour and eggs</strong>).</li>
+          </ul>
+          <p>A bag of flour and a cake never share a label — that's normal. Proving «live = source» relies on <strong>matching each one to itself, twice</strong>:</p>
+          <ol>
+            <li><strong>Check ①</strong>: the CID of the source package you download = the published Source package CID → the source you read was <strong>not swapped</strong>.</li>
+            <li><strong>Check ②</strong>: the CID you rebuild from that source in a pinned Docker toolchain = the published Game client CID → the live game is <strong>compiled from exactly this source</strong>.</li>
+          </ol>
+          <p>Both matches = <strong>what you can read (source) is what actually runs (game)</strong>. The operator cannot show clean code while secretly running cheating code — any independent rebuild would fail to match and expose it instantly.</p>
+
+          <h3><span class="fp-step" aria-hidden="true">1</span>Read the official release inputs</h3>
+          <pre><code>curl -L -o release.json https://fairpoker.app/source/release.json
+# see: gameClientCid, currentSourceRelease.ipfsCid, archiveSha256,
+#      and reproducibleGameClientBuild.buildEnv (incl. SOURCE_DATE_EPOCH)</code></pre>
+
+          <h3><span class="fp-step" aria-hidden="true">2</span>Download the source package and verify (Check ①)</h3>
+          <pre><code>SOURCE_ARCHIVE_URL=$(node -e "console.log(require('./release.json').archiveUrl)")
+curl -L -o fair-poker-source.tar.gz "$SOURCE_ARCHIVE_URL"
+
+# (a) SHA256 must equal release.json archiveSha256
+shasum -a 256 fair-poker-source.tar.gz
+
+# (b) source package CID must equal release.json currentSourceRelease.ipfsCid  ← Check ①
+ipfs add -rQ --cid-version=1 --raw-leaves --only-hash fair-poker-source.tar.gz</code></pre>
+
+          <h3><span class="fp-step" aria-hidden="true">3</span>Rebuild in the pinned Docker toolchain</h3>
+          <pre><code>tar -xzf fair-poker-source.tar.gz   # → fair-poker-source/
+cd fair-poker-source
+
+# use the values from release.json reproducibleGameClientBuild.buildEnv:
+export SOURCE_DATE_EPOCH=...                 # buildEnv.SOURCE_DATE_EPOCH
+export REACT_APP_SOURCE_ARCHIVE_IPFS_CID=...
+export REACT_APP_SOURCE_ARCHIVE_SHA256=...
+export REACT_APP_SOURCE_ARCHIVE_URL=...
+
+bash scripts/reproducible-game-build.sh ../fair-poker-source.tar.gz</code></pre>
+
+          <h3><span class="fp-step" aria-hidden="true">4</span>Compare the result (Check ②)</h3>
+          <p>The script prints a final <strong>Game client CID</strong>. It must equal the Game client CID in «Release facts» above — and the CID your browser actually loads when you enter the game.</p>
+
+          <h3>What each comparison proves</h3>
+          <dl class="fp-dl">
+            <dt>Check ① matches</dt><dd>the source you're reading is the official source, not swapped.</dd>
+            <dt>Check ② matches</dt><dd>the live game is built from this exact source, nothing else.</dd>
+            <dt>① + ② both match</dt><dd>what you see (source) is what runs (game). No room for hidden code.</dd>
+          </dl>
+
+          <div class="fp-callout"><p><strong>Don't want to compile? Two lighter quick checks:</strong> ① open the same Game client CID through different gateways (<code>ipfs.io</code>, <code>dweb.link</code>) — you should get identical files (content-addressed: change one byte and the CID changes); ② the table's «Secure Table» panel compares your loaded client at runtime and shows locked / mismatch / not pinned.</p></div>
+          <div class="fp-callout"><p><strong>Honest boundary:</strong> this reproduction proves the client running in the player's browser. The backend relay server (worker) is out of scope — but you don't need to trust it: the public client source above already proves the worker is a dumb relay that only sees ciphertext and cannot deal cards, remove players, or change results. Full guide: <a href="https://fairpoker.app/source/REPRODUCIBLE_BUILD.md">REPRODUCIBLE_BUILD.md</a>.</p></div>
+        </div>
+      </section>
+
+      <div data-l="zh">
+        <h2>每手自带 4 灯公平校验（自动，无需操作）</h2>
+        <p>每局结束的瞬间，浏览器自动跑 4 项校验并在桌面亮一个覆盖层：<strong>① 牌堆完整</strong>（52 张唯一、无重复）·<strong>② 全员参与洗牌</strong>（每位玩家都完成 shuffle + lock）·<strong>③ 记录指纹一致</strong>（canonicalHandHash 可与其他玩家比对）·<strong>④ 签名齐全</strong>。通过盖"已验证"印，异常红灯并提示下载证据。无需任何命令行；只在看到红灯或想自己再确认时再走下面的复验流程。</p>
+
+        <h2>下载并在本机重放一局牌</h2>
         <ol>
           <li>在牌桌左上角打开「安全牌局」面板。</li>
           <li>点「下载」，保存本局 transcript JSON。</li>
@@ -133,30 +225,10 @@ npm run verify:transcript -- /path/to/transcript.json</code></pre>
       </div>
 
       <div data-l="en">
-        <h3><span class="fp-step" aria-hidden="true">1</span>Match the live client to the public source</h3>
-        <ol>
-          <li>Confirm the table client CID you opened equals the Game client CID above. The same CID should load identical frontend files through different IPFS gateways (<code>ipfs.io</code>, <code>dweb.link</code>).</li>
-          <li>Download the core source audit package and compare its SHA256 with the Archive SHA256 above.</li>
-          <li>Extract it, regenerate the source fingerprint, and compare it with the published Source fingerprint.</li>
-        </ol>
-        <pre><code>curl -L -o release.json https://fairpoker.app/source/release.json
-SOURCE_ARCHIVE_URL=$(node -e "console.log(require('./release.json').archiveUrl)")
-ARCHIVE_SHA256=$(node -e "console.log(require('./release.json').archiveSha256.replace(/^sha256:/, ''))")
+        <h2>Every hand auto-runs a four-light fairness audit (no action needed)</h2>
+        <p>The moment a hand ends, the browser automatically runs four checks and shows an overlay on the table: <strong>① deck integrity</strong> (52 unique, no duplicates) · <strong>② all players shuffled and locked</strong> · <strong>③ matching record fingerprint</strong> (canonicalHandHash, exportable for cross-player comparison) · <strong>④ signatures complete</strong>. A pass stamps "verified"; a warn lights red and offers the evidence for download. No command line required; only follow the steps below when you see a red light or want to confirm a hand yourself.</p>
 
-curl -L -o fair-poker-source.tar.gz "$SOURCE_ARCHIVE_URL"
-
-shasum -a 256 fair-poker-source.tar.gz
-# must equal $ARCHIVE_SHA256
-
-mkdir fair-poker-source
-tar -xzf fair-poker-source.tar.gz -C fair-poker-source --strip-components=1
-cd fair-poker-source
-npm ci
-npm run generate:release-metadata
-grep sourceFingerprint src/generated/releaseMetadata.ts</code></pre>
-        <p>If both the archive SHA256 and Source fingerprint match, the public dealing, shuffling, encryption, decryption, signing, transcript, and verifier code has not been replaced.</p>
-
-        <h3><span class="fp-step" aria-hidden="true">2</span>Replay a hand transcript</h3>
+        <h2>Download and replay a hand on your own machine</h2>
         <ol>
           <li>Open the Secure Table panel in the upper-left table tools.</li>
           <li>Click Download to save the hand transcript JSON.</li>
@@ -166,19 +238,44 @@ grep sourceFingerprint src/generated/releaseMetadata.ts</code></pre>
 npm run verify:transcript -- /path/to/transcript.json</code></pre>
         <div class="fp-callout"><p>A passing result means the hand's hash-chain, event order, signature format, bets, pot, and outcome can all be replayed on your own machine. Tampering with any important transcript field makes the verifier fail or warn.</p></div>
       </div>
+
+      <section id="no-kick">
+        <h2><span data-l="zh">为什么官方踢不了人</span><span data-l="en">Why the operator can't remove a player</span></h2>
+        <div data-l="zh">
+          <p>这是「轮流加密」扑克：开局时，牌桌上每个人都用自己的私钥，对整副牌轮流加了一层锁。要翻开任何一张牌，必须每个人都用各自的钥匙解开自己那层——少一个人，那张牌就永远解不开。</p>
+          <p>因此「谁在座、这手牌能不能继续」完全由各玩家浏览器里的密钥决定，不由服务器决定：</p>
+          <ol>
+            <li>服务器（worker）只是一个「哑巴中转」：它只转发各方已签名的消息，自己既没有任何人的私钥，也无权改动牌局状态。你在上面第 1 步校验过的公开源码里就能确认这一点。</li>
+            <li>服务器断开某个连接，最多只能触发对方「自动重连」；它无法占据座位、无法替谁解牌、也无法把谁判负——这些都需要对应玩家的私钥，而私钥只存在各自的浏览器里。</li>
+            <li>所以当有人彻底离开、缺了他那把钥匙时，这手牌在数学上就无法继续——只能整桌作废、各自重开。这不是官方踢人，而是密码学的硬限制，对官方和玩家一视同仁。</li>
+          </ol>
+          <div class="fp-callout"><p>一句话：官方就算想踢人或顶替你，技术上也做不到——它手里没有你的钥匙。上面第 1 步证明了「线上代码 = 这份公开源码」，你可以亲自读这份源码，确认服务器确实只是中转。</p></div>
+        </div>
+        <div data-l="en">
+          <p>This is “take-turns encryption” poker: at the start of a hand, every player locks the whole deck with their own private key, one layer each. To reveal any card, every player must peel off their own layer with their own key — if even one player is missing, that card can never be opened.</p>
+          <p>So “who is seated, and whether the hand can continue” is decided entirely by the keys in each player's browser, not by the server:</p>
+          <ol>
+            <li>The server (worker) is only a dumb relay: it forwards each side's signed messages and holds nobody's private key and no authority to change game state. You can confirm this in the public source you verified in Step 1.</li>
+            <li>If the server drops a connection, the most it can do is trigger that player's auto-reconnect. It cannot seize a seat, decrypt cards for anyone, or declare anyone the loser — all of that needs the relevant player's private key, which lives only in their browser.</li>
+            <li>That's why, when someone leaves for good and their key is gone, the hand mathematically cannot continue — the table is voided and everyone restarts. This is not the operator kicking anyone; it's a hard cryptographic limit that applies equally to the operator and the players.</li>
+          </ol>
+          <div class="fp-callout"><p>In short: even if the operator wanted to kick or impersonate you, it technically cannot — it does not hold your key. Step 1 above proves “the live code = this public source,” so you can read that source yourself and confirm the server is only a relay.</p></div>
+        </div>
+      </section>
     </main>
 
     <footer class="fp-foot">
       <div class="fp-foot-links">
         <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
-        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
-        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
-        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span></a>
+        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">透明度报告</span><span data-l="en">Transparency</span></a>
+        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">独立验证</span><span data-l="en">Verification</span></a>
+        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全白皮书</span><span data-l="en">Security Whitepaper</span></a>
         <a href="https://fairpoker.app/roadmap.html"><span data-l="zh">路线图</span><span data-l="en">Roadmap</span></a>
         <a href="https://fairpoker.app/privacy.html"><span data-l="zh">隐私</span><span data-l="en">Privacy</span></a>
         <a href="https://fairpoker.app/terms.html"><span data-l="zh">条款</span><span data-l="en">Terms</span></a>
         <a href="https://fairpoker.app/cookies.html">Cookie</a>
         <a href="https://fairpoker.app/responsible-play.html"><span data-l="zh">负责任游戏</span><span data-l="en">Responsible play</span></a>
+        <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener"><span data-l="zh">开源代码</span><span data-l="en">Source code</span></a>
         <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
       </div>
       <div><span data-l="zh">仅娱乐筹码 · 非真钱赌博</span><span data-l="en">Play chips only &middot; no real-money gambling</span></div>
@@ -208,5 +305,14 @@ npm run verify:transcript -- /path/to/transcript.json</code></pre>
       })();
     </script>
     <script src="./release-identity-loader.js" defer></script>
-  </body>
+  
+    <script>
+      (function(){
+        var el=document.documentElement;
+        function applyTitle(){var l=el.getAttribute('data-lang')||'zh';var t=el.getAttribute('data-title-'+l)||el.getAttribute('data-title-zh');if(t)document.title=t;}
+        applyTitle();
+        try{new MutationObserver(applyTitle).observe(el,{attributes:true,attributeFilter:['data-lang']});}catch(e){}
+      })();
+    </script>
+</body>
 </html>

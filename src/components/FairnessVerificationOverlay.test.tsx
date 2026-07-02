@@ -2,11 +2,16 @@ import React from "react";
 import {render, screen, waitFor, cleanup} from "@testing-library/react";
 import {SIGNED_EVENT_KIND} from "../lib/fairness/eventSigning";
 
-const transcriptRef: {entries: Array<{scope: 'public' | 'private'; wireEvent: unknown}>} = {entries: []};
+const transcriptRef: {entries: Array<{scope: 'public' | 'private'; wireEvent: unknown}>; throwErr?: boolean} = {entries: []};
 
 jest.mock("../lib/setup", () => ({
   TexasHoldem: {
-    getTranscript: () => ({entries: transcriptRef.entries}),
+    getTranscript: () => {
+      if (transcriptRef.throwErr) {
+        throw new Error('transcript unavailable mid-reconnect');
+      }
+      return {entries: transcriptRef.entries};
+    },
     listener: {on: () => undefined, off: () => undefined},
   },
 }));
@@ -63,4 +68,21 @@ test('renders nothing when not visible', () => {
   transcriptRef.entries = cleanHand();
   render(<FairnessVerificationOverlay visible={false} round={1} participants={PLAYERS}/>);
   expect(screen.queryByTestId('fairness-overlay')).toBeNull();
+});
+
+test('a throwing getTranscript (mid-reconnect refresh) never strands the spinner — it lands on a verdict', async () => {
+  // Repro of the live "in-hand refresh → fairness check spins forever" bug: a transcript
+  // snapshot captured mid-reconnect can throw. The effect must degrade gracefully (try/catch
+  // → no entries) and still reach a verdict instead of being stuck on "校验中…".
+  transcriptRef.entries = cleanHand();
+  transcriptRef.throwErr = true;
+  try {
+    render(<FairnessVerificationOverlay visible round={1} participants={PLAYERS}/>);
+    await waitFor(
+      () => expect(screen.getByTestId('fairness-overlay').getAttribute('data-status')).not.toBe('scanning'),
+      {timeout: 5000},
+    );
+  } finally {
+    transcriptRef.throwErr = false;
+  }
 });

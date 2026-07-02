@@ -71,6 +71,18 @@ test('keeps the original table layout during fold-win settlement', () => {
   expect(screen.getByLabelText('chips awarded')).toBeInTheDocument();
 });
 
+test('a VOIDED hand never pops the fairness check (an unfinished hand has nothing to prove fair, so no spinner can strand a peer)', () => {
+  // The fairness overlay for a voided hand is what stranded the no-refresh peer on an endless
+  // spinner (it waits on data the departed player will never send). A voided hand is skipped
+  // synchronously, so the overlay must be absent immediately.
+  render(<PokerTable
+    {...baseProps}
+    currentRoundFinished={true}
+    lastWinningResult={{how: 'Voided', round: 1, missingPlayers: [], approvals: []}}
+  />);
+  expect(screen.queryByTestId('fairness-overlay')).toBeNull();
+});
+
 test('does not render staging when a higher priority recovery panel is active', () => {
   render(<PokerTable {...baseProps} currentRoundFinished={true} suppressStaging />);
   expect(screen.queryByTestId('staging')).toBeNull();
@@ -87,14 +99,18 @@ test('keeps community cards visible while a completed match waits for host resta
   expect(screen.getByTestId('pot')).toBeVisible();
 });
 
-test('hides community cards behind the shuffle overlay', () => {
+test('shows the shuffle overlay as a small toast without hiding the table', () => {
+  // The encrypted shuffle is now a small non-blocking corner toast, so during a live hand the
+  // table (pot / community-card area) stays visible behind it instead of being covered by a
+  // full-screen overlay. This is the real shuffle moment: a new hand has started (round in
+  // progress) while players' decks are being co-encrypted.
   render(<PokerTable
     {...baseProps}
-    currentRoundFinished={true}
+    currentRoundFinished={false}
     shuffleOverlayStartedAt={Date.now()}
   />);
   expect(screen.getByTestId('shuffle-overlay')).toBeInTheDocument();
-  expect(screen.queryByTestId('pot')).toBeNull();
+  expect(screen.getByTestId('pot')).toBeInTheDocument();
 });
 
 test('renders shuffle overlay outside the transformed table container', () => {

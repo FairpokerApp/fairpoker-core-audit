@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh" data-lang="zh">
+<html lang="zh" data-lang="zh" data-title-zh="Fair Poker — 透明度报告" data-title-en="Fair Poker — Transparency report">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Fair Poker — 公平证据报告</title>
+    <title>Fair Poker — 透明度报告</title>
     <meta name="description" content="Fair Poker fairness evidence report: server-not-dealer model, IPFS release identity, source fingerprint, hash-chain transcripts, and local verification." />
     <meta name="theme-color" content="#07130F" />
     <style>
@@ -68,9 +68,9 @@
       <div class="fp-nav-right">
         <div class="fp-nav-links">
           <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
-          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
-          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
-          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span></a>
+          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">透明度报告</span><span data-l="en">Transparency</span></a>
+          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">独立验证</span><span data-l="en">Verification</span></a>
+          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全白皮书</span><span data-l="en">Security Whitepaper</span></a>
         </div>
         <div class="fp-langs" id="fp-langs" aria-label="Language">
           <button type="button" data-set="zh">中文</button>
@@ -81,8 +81,8 @@
 
     <main>
       <section data-l="zh">
-        <span class="fp-eyebrow">公平证据 · Evidence</span>
-        <h1>公平证据报告</h1>
+        <span class="fp-eyebrow">透明度报告 · Transparency</span>
+        <h1>透明度报告</h1>
         <p class="fp-lead">面向普通玩家与技术审计者，公开说明 Fair Poker 的"服务器不发牌"模型、IPFS 发布身份、源码指纹、哈希链 transcript，以及任何人都能在本地复验的方式。</p>
         <div class="fp-stat-grid">
           <div class="fp-stat"><span>官方域名</span><strong>fairpoker.app</strong></div>
@@ -93,10 +93,13 @@
         <h2>结论摘要</h2>
         <ul class="fp-check">
           <li>没有传统发牌服务器：Cloudflare Worker 只做全球边缘 WebSocket 中继，不生成牌序、不保存隐藏牌堆明文，也不持有可单方开牌的解密材料。</li>
-          <li>牌序由玩家浏览器共同形成——各自贡献密钥、加密、洗牌、锁牌、逐卡解密；私有底牌端到端加密，中继只见密文。</li>
-          <li>牌局客户端由 IPFS CID 固定发布；文件一改，CID 就变。核心公平源码公开供复验。</li>
-          <li>每局可下载签名 transcript，在本地复验事件顺序、签名、下注、奖池、公共牌、摊牌与最终哈希链。</li>
-          <li>"平台控牌、偷看底牌、事后改赢家"这三类风险，被放进同一条可下载、可重放、可比对的证据链。</li>
+          <li>官方零裁判、零踢人：协议层无"操作员踢人"事件；中继已降为哑中继，只排序转发并报告谁在线，不计算座位/回合/赢家/筹码。中继切断 WebSocket 只触发自动重连，不能改变牌局状态或夺座位、筹码。</li>
+          <li>浏览器即权威：座位/底池/轮到谁/赢家由你的浏览器用同一套确定性 reducer 从签名事件日志算出，两端读同一份日志必然一致；重连按 sinceSeq 把日志补齐后重新算出相同状态，刷新或瞬时断网不会把你"瞬移"到观战席。</li>
+          <li>牌序由玩家浏览器共同形成——各自贡献密钥、加密、洗牌、锁牌、逐卡解密；私有底牌端到端密封到收牌方公钥并绑定 sender / recipient / round / cardOffset，中继只见密文。</li>
+          <li>牌局客户端由 IPFS CID 固定发布；文件一改，CID 就变。浏览器运行时还会拿权威 CID 与当前页面 CID 比对，安全面板亮"已锁定 / 不符 / 未固定"。</li>
+          <li>每局可下载签名 transcript，在本地复验事件顺序、签名、下注、奖池、公共牌、摊牌与最终哈希链；额外有每手 4 灯公平校验覆盖层（牌堆完整 · 全员参与洗牌 · 记录指纹一致 · 签名齐全）主动告警可疑事件。</li>
+          <li>断线规则极简：可恢复 → 无损自愈；密钥不可达 → 本手作废 + 全额退还 + 整桌结束建议换桌。没有罚款或代踢开关。</li>
+          <li>"平台控牌、偷看底牌、事后改赢家、强行踢人"这四类风险，被放进同一条可下载、可重放、可比对的证据链。</li>
         </ul>
 
         <h2>发布证据</h2>
@@ -113,7 +116,7 @@
         <h2>更深一层（按需查看）</h2>
         <ul class="fp-check">
           <li><strong>官方为什么无法作弊：</strong>在公布的 CID 与可本地复验的 transcript 下，改赢家、改下注、偷看底牌或换牌序，都会让签名、哈希链或 verifier 复验失败——完整攻击与防护边界见 <a href="https://fairpoker.app/security.html">安全模型</a>。</li>
-          <li><strong>如何亲手复验：</strong>牌桌安全面板点"下载记录"+"本地检查"即可在本机复验；技术用户可用审计包里的 verifier 独立复验——逐步教程见 <a href="https://fairpoker.app/verify-guide.html">复验教程</a>。</li>
+          <li><strong>如何亲手复验：</strong>牌桌安全面板点"下载记录"+"本地检查"即可在本机复验；技术用户可用审计包里的 verifier 独立复验——逐步指南见 <a href="https://fairpoker.app/verify-guide.html">独立验证指南</a>。</li>
           <li><strong>诚实边界：</strong>以上封的是"官方"单方作弊；线下串通与路线图上的可验证洗牌证明，如实列在 <a href="https://fairpoker.app/roadmap.html">路线图</a>。</li>
         </ul>
 
@@ -135,8 +138,8 @@
       </section>
 
       <section data-l="en">
-        <span class="fp-eyebrow">Evidence</span>
-        <h1>Fairness evidence report</h1>
+        <span class="fp-eyebrow">Transparency</span>
+        <h1>Transparency report</h1>
         <p class="fp-lead">For both regular players and technical auditors: how Fair Poker's server-not-dealer model, IPFS release identity, source fingerprint, and hash-chain transcripts work — and how anyone can verify a hand locally.</p>
         <div class="fp-stat-grid">
           <div class="fp-stat"><span>Official domain</span><strong>fairpoker.app</strong></div>
@@ -147,10 +150,13 @@
         <h2>Summary</h2>
         <ul class="fp-check">
           <li>No traditional dealing server: the Cloudflare Worker is only an edge WebSocket relay. It does not generate the card order, store cleartext of the hidden deck, or hold material to unilaterally open cards.</li>
-          <li>The card order is formed jointly by player browsers — each contributes keys, encrypts, shuffles, locks, and decrypts per card. Private hole cards are end-to-end encrypted; the relay sees only ciphertext.</li>
-          <li>The table client is pinned by an IPFS CID; change a file and the CID changes. The core fairness source is public for verification.</li>
-          <li>Every hand exports a signed transcript you can replay locally to check order, signatures, bets, pot, board, showdown, and the final hash chain.</li>
-          <li>"Operator controls cards", "peeks at hole cards", and "rewrites the winner" all collapse into one downloadable, replayable, comparable evidence chain.</li>
+          <li>Operator zero referee, zero kick power: the protocol has no "operator kick" event type; the relay is now a dumb relay that only orders, forwards, and reports presence and computes no seats/rounds/winners/chips. The relay dropping a socket only triggers client-side auto-reconnect — it cannot change game state or seize a seat or chips.</li>
+          <li>Browser-authoritative: seats / pot / turn order / winner are all computed by your browser with the same deterministic reducer over the signed event log, so two browsers reading the same log necessarily agree; reconnect replays missed messages by sinceSeq to complete the log and re-derives the identical state, so a refresh or brief network drop cannot teleport you to the spectator rail.</li>
+          <li>The card order is formed jointly by player browsers — each contributes keys, encrypts, shuffles, locks, and decrypts per card. Private hole cards are end-to-end sealed to the recipient's public key and bound to sender / recipient / round / cardOffset; the relay sees only ciphertext.</li>
+          <li>The table client is pinned by an IPFS CID; change a file and the CID changes. At runtime the browser also fetches the authoritative CID from ai.json and compares it with the running CID — the security panel shows locked / mismatch / not pinned.</li>
+          <li>Every hand exports a signed transcript you can replay locally to check order, signatures, bets, pot, board, showdown, and the final hash chain — plus a four-light fairness audit overlay (deck integrity · all players shuffled and locked · matching record fingerprint · signatures complete) that actively flags suspicious hands.</li>
+          <li>Disconnect rule is minimal: a recoverable disconnect auto-recovers losslessly; a needed decrypt key being unavailable voids the hand, refunds in full, and ends the table for a fresh room. No penalty or kick knobs.</li>
+          <li>"Operator controls cards", "peeks at hole cards", "rewrites the winner", and "forcibly removes a player" all collapse into one downloadable, replayable, comparable evidence chain.</li>
         </ul>
 
         <h2>Release evidence</h2>
@@ -192,14 +198,15 @@
     <footer class="fp-foot">
       <div class="fp-foot-links">
         <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
-        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
-        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
-        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span></a>
+        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">透明度报告</span><span data-l="en">Transparency</span></a>
+        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">独立验证</span><span data-l="en">Verification</span></a>
+        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全白皮书</span><span data-l="en">Security Whitepaper</span></a>
         <a href="https://fairpoker.app/roadmap.html"><span data-l="zh">路线图</span><span data-l="en">Roadmap</span></a>
         <a href="https://fairpoker.app/privacy.html"><span data-l="zh">隐私</span><span data-l="en">Privacy</span></a>
         <a href="https://fairpoker.app/terms.html"><span data-l="zh">条款</span><span data-l="en">Terms</span></a>
         <a href="https://fairpoker.app/cookies.html">Cookie</a>
         <a href="https://fairpoker.app/responsible-play.html"><span data-l="zh">负责任游戏</span><span data-l="en">Responsible play</span></a>
+        <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener"><span data-l="zh">开源代码</span><span data-l="en">Source code</span></a>
         <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
       </div>
       <div><span data-l="zh">仅娱乐筹码 · 非真钱赌博</span><span data-l="en">Play chips only &middot; no real-money gambling</span></div>
@@ -229,5 +236,14 @@
       })();
     </script>
     <script src="./release-identity-loader.js" defer></script>
-  </body>
+  
+    <script>
+      (function(){
+        var el=document.documentElement;
+        function applyTitle(){var l=el.getAttribute('data-lang')||'zh';var t=el.getAttribute('data-title-'+l)||el.getAttribute('data-title-zh');if(t)document.title=t;}
+        applyTitle();
+        try{new MutationObserver(applyTitle).observe(el,{attributes:true,attributeFilter:['data-lang']});}catch(e){}
+      })();
+    </script>
+</body>
 </html>

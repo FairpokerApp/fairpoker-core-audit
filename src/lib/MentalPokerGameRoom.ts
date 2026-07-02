@@ -9,6 +9,7 @@ import {
   encodeStandardCard,
   getStandard52Deck,
   isEncodedStandardCard,
+  normalizeMentalPokerBits,
   Player,
   PublicKey,
   StandardCard
@@ -21,6 +22,55 @@ import LifecycleManager from "./LifecycleManager";
 import {encryptAndSecureShuffle} from "./cryptoShuffle";
 import {validateMentalPokerEvent, isMentalPokerEventType} from "./fairness/mentalPokerSchema";
 import {sealCardKey, openCardKey} from "./fairness/privateEventCrypto";
+
+// ─── 预洗牌（pre-shuffle warm-up）──────────────────────────────────────────────
+// 一次加密洗牌里唯一"慢"的部分，是本机为自己生成的那套 SRA 密钥（首洗者还要现算一个
+// 1024-bit 的健全模数，要好几秒）。牌真正打起来的时候 CPU 基本闲着，所以我们在这段空闲里
+// 把"下一手首洗要用的密钥材料"提前算好、缓存起来；等下一手轮到本机首洗时，牌堆几乎瞬间就发
+// 得出去，玩家感觉不到洗牌延迟。
+//
+// 这是纯粹的本地性能缓存，绝不改动协议、事件流、transcript 或公平性：
+//   · 预生成的模数走的是和临场生成一模一样的 generateSoundModulus，通过同一套健全性校验；
+//   · 若这一手本机并不是首洗者、或桌子换了 bits，缓存直接丢弃、按老路现算，行为完全一致；
+//   · 一次只缓存一份，用掉即失效，不会堆积。
+// 因此它只可能让洗牌更快，不可能让某一手变得"不公平"或卡住。
+let warmFirstShufflerPlayer: {bits: number; promise: Promise<Player>} | null = null;
+
+// 生成一份首洗者密钥的工厂。生产环境就是现算一套（与临场首洗完全一致）；测试可用
+// __setWarmPlayerFactoryForTests 注入轻量假实现，避免单测里跑真 1024-bit 加密。
+const DEFAULT_WARM_PLAYER_FACTORY = (bits: number): Promise<Player> => createPlayer({cards: CARDS, bits});
+let warmPlayerFactory: (bits: number) => Promise<Player> = DEFAULT_WARM_PLAYER_FACTORY;
+export function __setWarmPlayerFactoryForTests(factory: ((bits: number) => Promise<Player>) | null): void {
+  warmPlayerFactory = factory ?? DEFAULT_WARM_PLAYER_FACTORY;
+  warmFirstShufflerPlayer = null;
+}
+
+// 后台开始预生成下一手"首洗者"的密钥材料。可安全重复调用：已在预热同 bits 时直接返回。
+export function warmUpFirstShufflerPlayer(bits?: number): void {
+  const normalized = normalizeMentalPokerBits(bits);
+  if (warmFirstShufflerPlayer && warmFirstShufflerPlayer.bits === normalized) {
+    return; // 已经在预热 / 已就绪
+  }
+  const promise = warmPlayerFactory(normalized);
+  warmFirstShufflerPlayer = {bits: normalized, promise};
+  // 预热失败（极少见）不能污染下一手：丢弃这份缓存，届时按老路现算即可。
+  promise.catch(() => {
+    if (warmFirstShufflerPlayer && warmFirstShufflerPlayer.promise === promise) {
+      warmFirstShufflerPlayer = null;
+    }
+  });
+}
+
+// 取走已预热的首洗者密钥（一次性消费）；bits 不匹配或没有预热时返回 null，调用方现算。
+export function takeWarmFirstShufflerPlayer(bits?: number): Promise<Player> | null {
+  const normalized = normalizeMentalPokerBits(bits);
+  if (warmFirstShufflerPlayer && warmFirstShufflerPlayer.bits === normalized) {
+    const promise = warmFirstShufflerPlayer.promise;
+    warmFirstShufflerPlayer = null; // 用掉即失效
+    return promise;
+  }
+  return null;
+}
 
 export interface MentalPokerRoundSettings {
   participants?: string[];
@@ -758,9 +808,12 @@ export default class MentalPokerGameRoom {
     const myPeerId = await this.gameRoom.peerIdAsync;
     if (participants[0] === myPeerId) {
       console.debug(`Creating mental poker player ${myPeerId}`);
-      const playerPromise = createPlayer({
+      const bits = settings.bits ?? DEFAULT_MENTAL_POKER_BITS;
+      // 预洗牌：优先用当前手空闲时后台预生成好的首洗者密钥（瞬间就绪）；没有预热或 bits 不匹配
+      // 时按老路现算，行为完全一致。预热的模数与现算走同一 generateSoundModulus，公平性无差别。
+      const playerPromise = takeWarmFirstShufflerPlayer(bits) ?? createPlayer({
         cards: CARDS,
-        bits: settings.bits ?? DEFAULT_MENTAL_POKER_BITS,
+        bits,
       });
       roundData.playerDeferred(myPeerId).resolve(playerPromise);
 

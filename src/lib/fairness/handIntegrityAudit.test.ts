@@ -81,6 +81,23 @@ describe('auditHandIntegrity', () => {
     expect(shuffleCheck.reasonCode).toBe('incomplete-shuffle');
   });
 
+  it('does NOT flag an incomplete shuffle on a VOIDED hand (a mid-shuffle refresh legitimately cut it short)', async () => {
+    // Same interrupted shuffle as above, but the hand was voided/refunded — a deal-phase void
+    // (e.g. a mid-shuffle refresh) legitimately leaves the shuffle incomplete, so it must not
+    // raise a false "a player skipped the shuffle" cheating alarm. The shuffle check reports
+    // not-evaluated and the overall verdict is not a warning.
+    const result = await auditHandIntegrity({
+      entries: cleanHand(PLAYERS, {dropShuffleFor: 'carol'}),
+      round: ROUND,
+      participants: PLAYERS,
+      voided: true,
+    });
+    const shuffleCheck = check(result, 'fullShuffle');
+    expect(shuffleCheck.status).toBe('pending');
+    expect(shuffleCheck.reasonCode).toBe('voided-hand');
+    expect(result.status).not.toBe('warn');
+  });
+
   it('agrees when a peer receipt matches the local hand hash', async () => {
     const entries = cleanHand(PLAYERS);
     const first = await auditHandIntegrity({entries, round: ROUND, participants: PLAYERS});

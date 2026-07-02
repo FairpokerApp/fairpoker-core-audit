@@ -11,20 +11,20 @@
   var pageText = {
     '/verify-guide.html': {
       eyebrow: {
-        zh: 'Fair Poker 复验教程',
-        en: 'Fair Poker Verification Guide',
-        ja: 'Fair Poker 検証ガイド',
-        es: 'Guía de verificación Fair Poker',
-        fr: 'Guide de vérification Fair Poker',
-        de: 'Fair Poker Prüfungsanleitung'
+        zh: 'Fair Poker 独立验证',
+        en: 'Fair Poker Independent Verification',
+        ja: 'Fair Poker 独立検証',
+        es: 'Verificación independiente Fair Poker',
+        fr: 'Vérification indépendante Fair Poker',
+        de: 'Fair Poker Unabhängige Verifizierung'
       },
       title: {
-        zh: '复现公平验证教程',
-        en: 'Fairness Verification Guide',
-        ja: '公平性検証ガイド',
-        es: 'Guía para verificar la equidad',
-        fr: 'Guide de vérification de l’équité',
-        de: 'Anleitung zur Fairness-Prüfung'
+        zh: '独立验证指南',
+        en: 'Independent Verification Guide',
+        ja: '独立検証ガイド',
+        es: 'Guía de verificación independiente',
+        fr: 'Guide de vérification indépendante',
+        de: 'Anleitung zur unabhängigen Verifizierung'
       },
       intro: {
         zh: '本页说明如何从牌桌下载 transcript，并用公开源码中的 verifier 在本地复验牌局记录。',
@@ -37,20 +37,20 @@
     },
     '/security.html': {
       eyebrow: {
-        zh: 'Fair Poker 安全模型',
-        en: 'Fair Poker Security Model',
-        ja: 'Fair Poker セキュリティモデル',
-        es: 'Modelo de seguridad Fair Poker',
-        fr: 'Modèle de sécurité Fair Poker',
-        de: 'Fair Poker Sicherheitsmodell'
+        zh: 'Fair Poker 安全白皮书',
+        en: 'Fair Poker Security Whitepaper',
+        ja: 'Fair Poker セキュリティ白書',
+        es: 'Libro blanco de seguridad Fair Poker',
+        fr: 'Livre blanc de sécurité Fair Poker',
+        de: 'Fair Poker Sicherheits-Whitepaper'
       },
       title: {
-        zh: '防攻击安全说明',
-        en: 'Security and Attack Model',
-        ja: '攻撃対策と安全性',
-        es: 'Seguridad y modelo de ataque',
-        fr: 'Sécurité et modèle d’attaque',
-        de: 'Sicherheits- und Angriffsmodell'
+        zh: '安全白皮书',
+        en: 'Security Whitepaper',
+        ja: 'セキュリティ白書',
+        es: 'Libro blanco de seguridad',
+        fr: 'Livre blanc de sécurité',
+        de: 'Sicherheits-Whitepaper'
       },
       intro: {
         zh: '本页说明 Fair Poker 如何把平台控牌、偷看底牌、篡改牌局和事后改记录放进可验证证据边界。',
@@ -63,20 +63,20 @@
     },
     '/audit-report.html': {
       eyebrow: {
-        zh: 'Fair Poker 公平证据报告',
-        en: 'Fair Poker Evidence Report',
-        ja: 'Fair Poker 証拠レポート',
-        es: 'Informe de evidencia Fair Poker',
-        fr: 'Rapport de preuve Fair Poker',
-        de: 'Fair Poker Nachweisbericht'
+        zh: 'Fair Poker 透明度报告',
+        en: 'Fair Poker Transparency Report',
+        ja: 'Fair Poker 透明性レポート',
+        es: 'Informe de transparencia Fair Poker',
+        fr: 'Rapport de transparence Fair Poker',
+        de: 'Fair Poker Transparenzbericht'
       },
       title: {
-        zh: '公平证据报告',
-        en: 'Fairness Evidence Report',
-        ja: '公平性証拠レポート',
-        es: 'Informe de evidencia de equidad',
-        fr: 'Rapport de preuve d’équité',
-        de: 'Fairness-Nachweisbericht'
+        zh: '透明度报告',
+        en: 'Transparency Report',
+        ja: '透明性レポート',
+        es: 'Informe de transparencia',
+        fr: 'Rapport de transparence',
+        de: 'Transparenzbericht'
       },
       intro: {
         zh: '本报告面向普通玩家和技术审计者，公开说明 Fair Poker 的 server-not-dealer 牌局模型、IPFS 发布证据、源码指纹、哈希链 transcript 和本地复验方式。',

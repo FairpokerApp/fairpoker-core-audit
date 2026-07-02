@@ -246,6 +246,10 @@ export default function AuthGate(props: { children: React.ReactNode }) {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // Compliance: one-time 18+/no-real-money acknowledgement. Gates account entry
+  // only on the first sign-in on a device (persistent sessions mean returning
+  // players never see it again), so it never interrupts actual play.
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   // RELEASE BOUNDARY: the homepage reads release identity from ai.json at
   // runtime. Homepage/Snyk/AI/marketing/audit-display changes must not create
   // or imply a new Game client CID.
@@ -498,10 +502,14 @@ const manifest = {
       setError(t('passwordMax'));
       return;
     }
+    if (!agreedToTerms) {
+      setError(t('ageConsentRequired'));
+      return;
+    }
     setBusy(true);
     setError('');
     try {
-      const nextSession = await enterAccount(username, password);
+      const nextSession = await enterAccount(username, password, {agreedToTerms: true});
       setSession(nextSession);
       if (officialHost && gameIpfsCid) {
         window.location.assign(buildGameEntryUrl(gameIpfsCid));
@@ -562,6 +570,8 @@ const manifest = {
             setUsername={setUsername}
             password={password}
             setPassword={setPassword}
+            agreedToTerms={agreedToTerms}
+            setAgreedToTerms={setAgreedToTerms}
             busy={busy}
             error={error}
             submit={submit}
@@ -964,6 +974,8 @@ function AccountEntryForm(props: {
   setUsername: (username: string) => void;
   password: string;
   setPassword: (password: string) => void;
+  agreedToTerms: boolean;
+  setAgreedToTerms: (agreed: boolean) => void;
   busy: boolean;
   error: string;
   submit: (event: FormEvent) => void;
@@ -1012,9 +1024,23 @@ function AccountEntryForm(props: {
         </label>
       </div>
 
+      <label className="auth-consent">
+        <input
+          type="checkbox"
+          checked={props.agreedToTerms}
+          onChange={event => props.setAgreedToTerms(event.target.checked)}
+        />
+        <span>
+          {t('ageConsentLabel')}{' '}
+          <a href="https://fairpoker.app/terms" target="_blank" rel="noreferrer">
+            {t('ageConsentTermsLink')}
+          </a>
+        </span>
+      </label>
+
       {props.error && <div className="auth-error">{props.error}</div>}
 
-      <button className="auth-primary" type="submit" disabled={props.busy}>
+      <button className="auth-primary" type="submit" disabled={props.busy || !props.agreedToTerms}>
         {props.busy ? t('working') : t('accountEntrySubmit')}
       </button>
 

@@ -109,6 +109,8 @@ export default function Opponents(props: {
   mainPotWinners: Set<string> | null;
   lastWinningResult?: WinningResult;
   scoreBoard?: Map<string, number>;
+  /** 本场累计输赢（funds − boughtIn），一直显示在每个座位上，与上面按手结算的 scoreBoard 不同。 */
+  totalScoreBoard?: Map<string, number>;
   currentRoundFinished?: boolean;
   actionsDone: Map<string, string | number> | null;
   autoFoldTimeoutSeconds?: number;
@@ -128,6 +130,7 @@ export default function Opponents(props: {
     holesPerPlayer,
     lastWinningResult,
     scoreBoard,
+    totalScoreBoard,
     seatByPeer,
     mySeat,
     onTakeSeat,
@@ -222,6 +225,20 @@ export default function Opponents(props: {
     return group ? handRankLabel(group.handValue) : null;
   };
   const scoreDeltaFor = (player: string) => currentRoundFinished ? scoreBoard?.get(player) : undefined;
+  // 本场累计输赢的常驻小标签（一直显示，$0 也显示，用低调的中性色）。
+  const renderSessionPnl = (player: string) => {
+    if (!totalScoreBoard) {
+      return null;
+    }
+    const net = totalScoreBoard.get(player) ?? 0;
+    const tone = net > 0 ? 'positive' : net < 0 ? 'negative' : 'flat';
+    return (
+      <div className={`session-pnl ${tone}`} title={t('netTotalTitle')} data-testid="session-pnl">
+        <span className="session-pnl-tag">{t('netTotalTag')}</span>
+        <b>{net > 0 ? '+' : net < 0 ? '-' : ''}${Math.abs(net)}</b>
+      </div>
+    );
+  };
   const renderOpponentAvatar = (opponent: string) => (
     <button
       type="button"
@@ -396,6 +413,7 @@ export default function Opponents(props: {
                       >{scoreDeltaFor(opponent)! > 0 ? '+' : '-'}${Math.abs(scoreDeltaFor(opponent)!)}</div>
                     )}
                     <div className="bankroll">${bankrolls.get(opponent) ?? 0}</div>
+                    {renderSessionPnl(opponent)}
                     {board && <HandCards hole={holesPerPlayer?.get(opponent)}/>}
                     {
                       actionsDone && <BetAmount playerId={opponent} actionsDone={actionsDone}/>

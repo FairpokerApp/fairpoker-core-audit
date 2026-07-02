@@ -484,6 +484,7 @@ export default function TexasHoldemUiPreview() {
           mainPotWinners={mainPotWinners}
           lastWinningResult={winningResult}
           scoreBoard={scoreBoard}
+          totalScoreBoard={scoreBoard}
           currentRoundFinished={preview.currentRoundFinished}
           actionsDone={preview.currentRoundFinished ? null : (preview.actionsDone ?? null)}
           seatByPeer={new Map((players ?? []).map((p, i) => [p, Math.floor((i * 9) / (players?.length || 1))]))}
@@ -520,6 +521,8 @@ export default function TexasHoldemUiPreview() {
           names={names}
           setMyName={() => {}}
           mainPotWinners={mainPotWinners}
+          scoreDelta={preview.currentRoundFinished ? scoreBoard.get(me) : undefined}
+          netTotal={scoreBoard.get(me)}
           currentRoundFinished={preview.currentRoundFinished}
           isRejoinBlocked={preview.isRejoinBlocked}
           connectionStatus={preview.isRejoinBlocked ? 'warn' : 'good'}

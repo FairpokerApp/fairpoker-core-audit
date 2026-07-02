@@ -89,6 +89,17 @@ export default function PokerTable(props: {
       setFairnessVerify(null);
       return;
     }
+    // A VOIDED hand was never actually played out — a player refreshed/left mid-hand and the
+    // blinds were refunded. There is nothing to "prove fair" about an unfinished hand, and the
+    // peer may be gone, so a fairness check would only sit there spinning while it waits on
+    // data that is never coming. Skip the overlay entirely for voided hands; only a genuinely
+    // completed hand (showdown / fold-win) gets a verdict — and that verdict is derived purely
+    // from this client's own signed log, so it lands instantly regardless of the peer.
+    if (lastWinningResult?.how === 'Voided') {
+      setFairnessVerify(null);
+      fairnessShownRoundRef.current = round;
+      return;
+    }
     if (fairnessShownRoundRef.current === round) {
       return;
     }
@@ -96,11 +107,12 @@ export default function PokerTable(props: {
     // Let the winner / showdown register first, then play the fairness check.
     const timer = setTimeout(() => setFairnessVerify({round, startedAt: Date.now()}), 1800);
     return () => clearTimeout(timer);
-  }, [currentRoundFinished, round]);
+  }, [currentRoundFinished, round, lastWinningResult]);
+  // 洗牌指示已经改成右上角小角标（不再全屏遮挡），所以洗牌期间牌桌照常显示（空公共牌 + $0 底池），
+  // 洗完直接发牌、布局不跳动 —— 不再因为洗牌而把整张牌桌藏起来。
   const shouldShowCommunityCards = Boolean(
     players
     && board
-    && !showingShuffleOverlay
     && (!useStagingLayout || showingSettlementResult || seriesProgress?.complete)
   );
   return (
@@ -122,6 +134,7 @@ export default function PokerTable(props: {
           participants={overlayParticipants}
           names={names}
           playerId={playerId}
+          voided={lastWinningResult?.how === 'Voided'}
           onDismiss={() => setFairnessVerify(null)}
         />
       )}

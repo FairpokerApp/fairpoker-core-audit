@@ -4,6 +4,7 @@ import {TexasHoldem} from "../lib/setup";
 import {useI18n, TranslationKey} from "../lib/i18n";
 import {
   auditHandIntegrity,
+  AuditEntryLike,
   HandIntegrityResult,
   IntegrityCheck,
   IntegrityCheckId,
@@ -22,6 +23,12 @@ const REVEAL_STEP_MS = 440;
 const VERDICT_AT_MS = REVEAL_BASE_MS + CHECK_ORDER.length * REVEAL_STEP_MS + 220;
 const AUTO_DISMISS_PASS_MS = VERDICT_AT_MS + 5200;
 const AUTO_DISMISS_WARN_MS = VERDICT_AT_MS + 11000;
+// Hard safety net: the scan must NEVER spin forever. A normal audit settles in well under a
+// second, but a transcript snapshot captured mid-reconnect (right after an in-hand refresh)
+// can leave the audit promise un-settled — the verdict timers below then never arm and the
+// overlay is stuck on "校验中…". This independent timer forces the verdict to render no matter
+// what, so the spinner always resolves.
+const SCAN_HARD_TIMEOUT_MS = 8000;
 
 type Tone = 'pass' | 'warn' | 'pending';
 
@@ -109,6 +116,9 @@ export default function FairnessVerificationOverlay(props: {
   names?: Map<string, string>;
   playerId?: string;
   peerReceipts?: Array<{signer: string; handHash: string}>;
+  // True when this hand was voided/refunded. A void legitimately leaves the shuffle
+  // incomplete (e.g. a mid-shuffle refresh), so the audit must not flag it as cheating.
+  voided?: boolean;
   onDismiss?: () => void;
 }) {
   const {t: tBase} = useI18n();
@@ -132,14 +142,38 @@ export default function FairnessVerificationOverlay(props: {
     setPhase('scanning');
     setRevealed(0);
 
-    const snapshot = TexasHoldem?.getTranscript?.();
-    const entries = (snapshot?.entries ?? []).map((entry) => ({scope: entry.scope, wireEvent: entry.wireEvent}));
+    // Arm the hard-stop FIRST, before anything that could throw or hang, so the spinner can
+    // never be left running. If the audit never settles, this shows the verdict (a pending /
+    // not-evaluated state when there's no result) and then auto-dismisses.
+    timers.push(setTimeout(() => {
+      if (cancelled) {
+        return;
+      }
+      setRevealed(CHECK_ORDER.length);
+      setPhase('done');
+      timers.push(setTimeout(() => {
+        if (!cancelled) {
+          onDismissRef.current?.();
+        }
+      }, AUTO_DISMISS_PASS_MS));
+    }, SCAN_HARD_TIMEOUT_MS));
+
+    // A refresh can leave getTranscript throwing or returning a partial snapshot; degrade to
+    // no entries rather than letting the effect throw (which would strand the spinner).
+    let entries: AuditEntryLike[] = [];
+    try {
+      const snapshot = TexasHoldem?.getTranscript?.();
+      entries = (snapshot?.entries ?? []).map((entry) => ({scope: entry.scope, wireEvent: entry.wireEvent}));
+    } catch {
+      entries = [];
+    }
 
     auditHandIntegrity({
       entries,
       round: props.round,
       participants: props.participants,
       peerReceipts: props.peerReceipts,
+      voided: props.voided,
     })
       .then((res) => {
         if (cancelled) {
@@ -204,59 +238,50 @@ export default function FairnessVerificationOverlay(props: {
       ? t('fairnessVerdictPendingSub')
       : t('fairnessVerdictPassSub');
 
-  const dismiss = () => onDismissRef.current?.();
-
+  // 收尾公平校验：从原来的"全屏遮罩"改成左下角一张半透明小卡片（滑入/滑出），不盖牌桌、
+  // 完全穿透不拦截任何点击（pointer-events:none），几秒后自动收起。盾牌 + 4 项校验 + 结论
+  // 都在，让玩家清楚看到"这一手已被独立校验"，只是做得很小、不打断牌局节奏。
   const overlay = (
     <div
-      className={`fairness-overlay ${phase}`}
+      className={`fairness-overlay fairness-toast ${phase}`}
       role="status"
       aria-live="polite"
       data-testid="fairness-overlay"
       data-status={phase === 'done' ? overall : 'scanning'}
-      onClick={dismiss}
     >
-      <div className={`fairness-panel tone-${overall}`} onClick={(e) => e.stopPropagation()}>
-        <div className="fairness-head">
-          <span className="fairness-kicker">
+      <div className={`fairness-card tone-${overall}`}>
+        <div className="fairness-card-head">
+          <span className={`fairness-badge tone-${overall} ${phase === 'scanning' ? 'spinning' : ''}`} aria-hidden="true">
             <ShieldGlyph tone={phase === 'done' ? overall : 'pending'}/>
-            {t('fairnessTitle')}
           </span>
-          <span className="fairness-round">{t('fairnessHand', {round: props.round, players: props.participants.length})}</span>
+          <span className="fairness-card-titles">
+            <strong>{t('fairnessTitle')}</strong>
+            <small>{statusText} · {t('fairnessHand', {round: props.round, players: props.participants.length})}</small>
+          </span>
         </div>
-        <div className="fairness-body">
-          <div className="fairness-core">
-            <div className={`fairness-ring tone-${overall} ${phase === 'scanning' ? 'spinning' : ''}`} aria-hidden="true">
-              <svg viewBox="0 0 120 120" width="116" height="116">
-                <circle className="fairness-ring-bg" cx="60" cy="60" r="52"/>
-                <circle className="fairness-ring-fg" cx="60" cy="60" r="52"/>
-              </svg>
-              <span className="fairness-shield"><ShieldGlyph tone={phase === 'done' ? overall : 'pending'}/></span>
-            </div>
-            <div className="fairness-status">{statusText}</div>
-          </div>
-          <ul className="fairness-checks" data-testid="fairness-checks">
-            {CHECK_ORDER.map((id, index) => {
-              const check = result?.checks.find((c) => c.id === id);
-              const isIn = index < revealed;
-              const done = phase === 'done' && !!check;
-              const shown: IntegrityCheck['status'] = done ? displayCheckStatus(id, check as IntegrityCheck) : 'pending';
-              const labelKey = done ? checkLabelKey(id, check as IntegrityCheck) : CHECK_LABEL[id];
-              const detail = done ? detailKeyAndParams(check as IntegrityCheck) : null;
-              return (
-                <li
-                  key={id}
-                  className={`fairness-check status-${shown} ${isIn ? 'in' : ''}`}
-                  data-testid={`fairness-check-${id}`}
-                  data-check-status={done ? (check as IntegrityCheck).status : 'scanning'}
-                >
-                  <span className="fairness-clabel">{t(labelKey)}</span>
-                  <span className="fairness-cdetail">{detail ? t(detail.key, detail.params) : ''}</span>
-                  <span className="fairness-mark"><MarkGlyph status={shown}/></span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        <ul className="fairness-checks" data-testid="fairness-checks">
+          {CHECK_ORDER.map((id, index) => {
+            const check = result?.checks.find((c) => c.id === id);
+            const isIn = index < revealed;
+            const done = phase === 'done' && !!check;
+            const shown: IntegrityCheck['status'] = done ? displayCheckStatus(id, check as IntegrityCheck) : 'pending';
+            const labelKey = done ? checkLabelKey(id, check as IntegrityCheck) : CHECK_LABEL[id];
+            // 明细（如"52/52 唯一密文·无重复"）不再占版面，改成悬停提示，保留可信细节又保持小巧。
+            const detail = done ? detailKeyAndParams(check as IntegrityCheck) : null;
+            return (
+              <li
+                key={id}
+                className={`fairness-check status-${shown} ${isIn ? 'in' : ''}`}
+                data-testid={`fairness-check-${id}`}
+                data-check-status={done ? (check as IntegrityCheck).status : 'scanning'}
+                title={detail ? t(detail.key, detail.params) : undefined}
+              >
+                <span className="fairness-mark"><MarkGlyph status={shown}/></span>
+                <span className="fairness-clabel">{t(labelKey)}</span>
+              </li>
+            );
+          })}
+        </ul>
         <div className={`fairness-verdict tone-${overall} ${phase === 'done' ? 'show' : ''}`}>
           <span className="fairness-vico"><ShieldGlyph tone={overall === 'warn' ? 'warn' : 'pass'}/></span>
           <span className="fairness-vtext">

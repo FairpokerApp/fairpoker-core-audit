@@ -73,9 +73,9 @@
       <div class="fp-nav-right">
         <div class="fp-nav-links">
           <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
-          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
-          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
-          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全审计</span><span data-l="en">Security Audit</span></a>
+          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">透明度报告</span><span data-l="en">Transparency</span></a>
+          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">独立验证</span><span data-l="en">Verification</span></a>
+          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全白皮书</span><span data-l="en">Security Whitepaper</span></a>
         </div>
         <div class="fp-langs" id="fp-langs" aria-label="Language">
           <button type="button" data-set="zh">中文</button>
@@ -120,7 +120,7 @@
               <tr><td>客户端 CID 校验显示 ✓</td><td>安全面板对比"运行中的 CID 与权威发布 CID"，显示已锁定 / 不符 / 未从固定入口运行。</td></tr>
               <tr><td>中继 token 移出 URL ✓</td><td>中继认证 token 改走 WebSocket 子协议而非 URL 查询串，避免进入代理 / CDN / 访问日志。</td></tr>
               <tr><td>指纹覆盖全信任边界 ✓</td><td>source fingerprint 现覆盖认证 / 传输 / 启动 / 身份等全部信任边界文件，不再只是发牌核心。</td></tr>
-              <tr><td>客户端可复现构建 ✓</td><td>公开的源码包是<strong>完整可构建的客户端源码</strong>；在版本锁定的 Docker 工具链里 <code>npm ci</code> 重新编译，得到的 IPFS CID 与线上 Game client CID <strong>字节级一致</strong>——证明"你读到的公开源码"就是"线上真正在跑的程序"，官方无法给你看一份干净代码、却偷偷在跑另一套。复现步骤见 <a href="./verify-guide.html#reproduce">复验教程</a>。</td></tr>
+              <tr><td>客户端可复现构建 ✓</td><td>公开的源码包是<strong>完整可构建的客户端源码</strong>；在版本锁定的 Docker 工具链里 <code>npm ci</code> 重新编译，得到的 IPFS CID 与线上 Game client CID <strong>字节级一致</strong>——证明"你读到的公开源码"就是"线上真正在跑的程序"，官方无法给你看一份干净代码、却偷偷在跑另一套。复现步骤见 <a href="./verify-guide.html#reproduce">独立验证指南</a>。</td></tr>
             </tbody>
           </table>
         </div>
@@ -175,7 +175,7 @@
               <tr><td>有限开源边界（非玩法页面）</td><td class="fp-gap-cell">
                 <div class="fp-cov info">不影响公平性本身</div>
                 <p><span class="fp-gap-lbl">可能影响：</span>这不是安全漏洞，而是公开范围的取舍——可玩客户端（界面 + 公平内核 + 入口 + 静态资源）的<strong>完整可构建源码已经公开、并可字节级复现</strong>；仍未公开的只是首页、营销文案、AI 摘要页与后端运维这类<strong>不参与发牌、也不进入 Game client CID</strong> 的非玩法部分。影响的只是"能否一键重建整个站点的每个角落"，不影响任何一手牌的公平性。</p>
-                <p><span class="fp-gap-lbl">当前兜底：</span>所有与公平性相关的核心文件都已开源；你可以在固定 Docker 环境里用公开源码重编出与线上一致的客户端 CID（见<a href="./verify-guide.html#reproduce">复验教程</a>），并对照逐文件哈希、信任边界清单与运行中 CID 校验，核对你正在运行的就是公开审计过的那份代码。</p>
+                <p><span class="fp-gap-lbl">当前兜底：</span>所有与公平性相关的核心文件都已开源；你可以在固定 Docker 环境里用公开源码重编出与线上一致的客户端 CID（见<a href="./verify-guide.html#reproduce">独立验证指南</a>），并对照逐文件哈希、信任边界清单与运行中 CID 校验，核对你正在运行的就是公开审计过的那份代码。</p>
                 <p><span class="fp-gap-lbl">计划：</span>在不被整体抄袭的前提下持续扩大可复现构建范围，并引入外部签名发布日志与第三方复现见证。</p>
               </td></tr>
             </tbody>
@@ -293,9 +293,9 @@
     <footer class="fp-foot">
       <div class="fp-foot-links">
         <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
-        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
-        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
-        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全审计</span><span data-l="en">Security Audit</span></a>
+        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">透明度报告</span><span data-l="en">Transparency</span></a>
+        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">独立验证</span><span data-l="en">Verification</span></a>
+        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全白皮书</span><span data-l="en">Security Whitepaper</span></a>
         <a href="https://fairpoker.app/roadmap.html"><span data-l="zh">路线图</span><span data-l="en">Roadmap</span></a>
         <a href="https://fairpoker.app/privacy.html"><span data-l="zh">隐私</span><span data-l="en">Privacy</span></a>
         <a href="https://fairpoker.app/terms.html"><span data-l="zh">条款</span><span data-l="en">Terms</span></a>

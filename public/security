@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh" data-lang="zh">
+<html lang="zh" data-lang="zh" data-title-zh="Fair Poker — 安全白皮书" data-title-en="Fair Poker — Security whitepaper">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Fair Poker — 安全与攻击模型</title>
+    <title>Fair Poker — 安全白皮书</title>
     <meta name="description" content="Fair Poker security model: how operator card-control, hole-card peeking, tampering, and result rewriting are placed inside a verifiable evidence boundary." />
     <meta name="theme-color" content="#07130F" />
     <style>
@@ -57,6 +57,21 @@
       .fp-foot-links{display:flex;flex-wrap:wrap;gap:16px}
       [data-l]{display:none}
       html[data-lang="zh"] [data-l="zh"],html[data-lang="en"] [data-l="en"]{display:revert}
+      .fp-pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:999px;white-space:nowrap;margin-right:4px}
+      .fp-pill.fixed{color:#241a06;background:var(--fp-gold)}
+      .fp-pill.held{color:#06160F;background:var(--fp-emerald)}
+      .fp-pill.inherent{color:var(--fp-muted);background:rgba(159,176,168,.10);border:1px solid var(--fp-line)}
+      .fp-pill.open{color:#fff;background:#C0492F}
+      .fp-statrow{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 6px}
+      .fp-stat{flex:1 1 150px;background:var(--fp-card);border:1px solid var(--fp-line);border-radius:12px;padding:15px 16px}
+      .fp-stat b{display:block;font-size:27px;font-weight:700;color:var(--fp-ink);line-height:1.05;font-family:var(--fp-mono)}
+      .fp-stat b.gold{color:var(--fp-gold)}.fp-stat b.em{color:var(--fp-emerald)}
+      .fp-stat span{font-size:12.5px;color:var(--fp-muted)}
+      table.fp-log td:first-child{font-family:var(--fp-mono);color:var(--fp-gold);font-weight:700;white-space:nowrap;font-size:13px}
+      table.fp-log td:nth-child(2),table.fp-log th:nth-child(2){min-width:8.5em}
+      table.fp-log td:nth-child(3),table.fp-log th:nth-child(3){min-width:11em}
+      .fp-round2{border:1px dashed var(--fp-line);border-radius:12px;padding:18px 20px;margin:22px 0;background:var(--fp-emerald-soft)}
+      .fp-round2 h3{margin:8px 0 8px}.fp-round2 .fp-eyebrow{color:var(--fp-gold)}
       @media (max-width:820px){dl.fp-dl{grid-template-columns:1fr}.fp-nav-links{display:none}
         table,thead,tbody,tr,th,td{display:block}th{display:none}
         td{border-bottom:0;padding:4px 16px}td:first-child{padding-top:14px;font-size:15px}
@@ -69,9 +84,9 @@
       <div class="fp-nav-right">
         <div class="fp-nav-links">
           <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
-          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
-          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
-          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span></a>
+          <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">透明度报告</span><span data-l="en">Transparency</span></a>
+          <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">独立验证</span><span data-l="en">Verification</span></a>
+          <a href="https://fairpoker.app/security.html"><span data-l="zh">安全白皮书</span><span data-l="en">Security Whitepaper</span></a>
         </div>
         <div class="fp-langs" id="fp-langs" aria-label="Language">
           <button type="button" data-set="zh">中文</button>
@@ -82,13 +97,13 @@
 
     <main>
       <div data-l="zh">
-        <span class="fp-eyebrow">安全模型 · Security</span>
-        <h1>安全与攻击模型</h1>
+        <span class="fp-eyebrow">安全白皮书 · Whitepaper</span>
+        <h1>安全白皮书：安全与攻击模型</h1>
         <p class="fp-lead">这一页说明 Fair Poker 如何把"平台控牌、偷看底牌、篡改牌局、事后改记录"放进可验证的证据边界：发牌在玩家浏览器的协议中形成，中继只转发消息，事件进入签名 hash-chain transcript，并可由本地 verifier 重放。</p>
       </div>
       <div data-l="en">
-        <span class="fp-eyebrow">Security</span>
-        <h1>Security and attack model</h1>
+        <span class="fp-eyebrow">Whitepaper</span>
+        <h1>Security whitepaper: security and attack model</h1>
         <p class="fp-lead">This page explains how Fair Poker places operator card-control, hole-card peeking, tampering, and after-the-fact rewriting inside a verifiable evidence boundary: dealing is formed in the player browser protocol, the relay only forwards messages, events enter a signed hash-chain transcript, and any of it can be replayed by the local verifier.</p>
       </div>
 
@@ -112,26 +127,208 @@
         <div class="fp-callout">
           <p><strong>核心结论：</strong>伪装浏览器、改 User-Agent、改语言/时区/IP 等，最多影响脱敏的安全提示；它不能让攻击者直接看到别人的底牌。底牌需要对应玩家浏览器中的逐牌解密钥，解密钥只在发给该玩家或公开摊牌时出现。</p>
         </div>
+        <div class="fp-callout">
+          <p><strong>平台权力边界：</strong>Cloudflare Worker 只为签名消息排序、转发，并报告谁在线；它<strong>不计算座位、回合、轮到谁、赢家或筹码</strong>——这些局内逻辑已从中继移除（可在源码 <code>buildRoomState</code> 里查到只剩在线状态）。每个浏览器用<strong>同一套确定性 reducer</strong>，从签名事件日志算出全部牌桌状态；两端读同一份日志必然算出一致结果，刷新/重连后从日志重新算出完全相同的状态。没有任何协议路径把任何玩家踢出牌局、没收筹码、强行下一局、改写赢家或偷看未公开底牌。中继断 socket 只会触发玩家端自动重连，不能改变牌局状态或夺座位/筹码——并且这种事件可归因、可记录。</p>
+        </div>
         <h2>攻击面与防护边界</h2>
         <div class="fp-table-wrap">
           <table>
             <thead><tr><th>攻击手段</th><th>系统防护</th><th>验证结果</th></tr></thead>
             <tbody>
-              <tr><td>伪装浏览器信息、账号身份或设备环境</td><td>浏览器信息只作为脱敏安全信号，不参与发牌、解密或胜负判定。</td><td>设备信号不会给任何人增加看牌、控牌或改结果的权限。</td></tr>
-              <tr><td>试图偷看别人底牌</td><td>每张牌需要多方逐步解密。私有发牌阶段的解密事件只发给对应玩家；公开牌只在翻牌、转牌、河牌或摊牌时释放。逐卡解密钥仅在当前这一手牌进行期间暂存于本机，牌局一结束即删除，不长期保留。</td><td>私有发牌消息端到端加密发给收牌方，中继只见密文、拿不到逐卡解密钥，也看不到未公开底牌；其他玩家只会收到发给自己的私有消息。</td></tr>
-              <tr><td>篡改下注、弃牌、发牌或结果</td><td>事件由玩家签名，接收端校验签名、sender、payload hash；transcript 用 hash-chain 记录顺序与内容。</td><td>改事件、删事件、换顺序或改赢家，会破坏签名校验、payload hash 或 hash-chain replay。</td></tr>
-              <tr><td>中继服务器偷牌或控牌</td><td>使用 Cloudflare Worker 作为轻量 WebSocket 边缘中继，没有传统发牌服务器或自建 VPS 后端；中继只转发签名消息，不充当发牌方，不持有玩家签名私钥或账号密钥库。私有发牌消息端到端加密。</td><td>中继不能伪造或篡改签名事件，也不能像中心化 RNG 服务器一样单方决定牌序；私有发牌端到端加密，中继看不到逐卡解密钥与未公开底牌。</td></tr>
-              <tr><td>账号密码或本地密钥被盗</td><td>账号密钥库用密码派生密钥本地加密；登录改发客户端派生的 authSecret，服务端只存其哈希、不接触明文密码。</td><td>账号安全与发牌公平分层处理；身份恢复材料不参与牌序生成或赢家计算。</td></tr>
+              <tr><td>官方/中继试图把玩家踢出牌局或没收筹码</td><td>协议层不存在"操作员踢人"事件类型，也不存在中心化裁判。下注、弃牌、坐离都必须来自玩家本人的签名行动；无法继续才走全员共识作废+全额退还。中继切断 WebSocket 只触发玩家端指数退避自动重连，不改变状态。</td><td>中继没有任何协议路径单方移除玩家、没收筹码或改写赢家；这类异常切断可被归因记录。</td></tr>
+              <tr><td>刷新、网络抖动或强制跳转想把你"挤出"牌桌</td><td>浏览器为唯一权威：座位/底池/轮到谁/赢家全部由你的浏览器用同一套确定性 reducer 从签名事件日志算出，不依赖中继的房间状态。重连后按 sinceSeq 重放未读消息把日志补齐，浏览器再从日志重新算出与其他人完全一致的状态——轮到你时回归直接续上 turn，不会被"坐离"。</td><td>刷新、瞬时断网或网络切换不会把你瞬移到观战席；座位由你的浏览器从签名日志算出，中继对你在场与否的判断永远不能反过来把你拉下桌。</td></tr>
+              <tr><td>试图偷看别人底牌</td><td>每张牌需要多方逐步解密。私有发牌的逐卡解密钥用收牌方公钥端到端密封（RSA-OAEP），并绑定 sender / recipient / round / cardOffset，重定向到其它人或卡位的密文会被拒收。逐卡解密钥仅在当前这一手牌进行期间暂存于本机，牌局一结束即删除，不长期保留。</td><td>中继全程只看到密文，拿不到逐卡解密钥与未公开底牌；其他玩家只会收到发给自己的私有消息，密钥重发到错位置会被绑定校验拒掉。</td></tr>
+              <tr><td>篡改下注、弃牌、发牌、出场顺序或结果</td><td>每个事件由玩家签名，并绑定 tableId 与 sessionNonce；接收端校验签名、sender、payload hash、桌号与会话序号；transcript 用 hash-chain 记录顺序与内容。事件结构通过严格 schema 校验（牌堆须 52 张合法密文、下注须非负安全整数、密钥长度受限），畸形/越界事件直接拒收。</td><td>改事件、删事件、换顺序、改赢家、跨桌重放或会话内重放，都会破坏签名、桌号绑定、hash-chain replay 或 schema 校验。</td></tr>
+              <tr><td>中继服务器偷牌、控牌或决定牌序</td><td>使用 Cloudflare Worker 作为轻量 WebSocket 边缘中继，没有传统发牌服务器或自建 VPS 后端；中继只转发签名消息，不充当发牌方，不持有玩家签名私钥或账号密钥库。私有发牌端到端密封；牌序由所有玩家共同 shuffle + lock。</td><td>中继不能伪造或篡改签名事件，也不能像中心化 RNG 服务器一样单方决定牌序；私有发牌端到端加密，中继看不到逐卡解密钥与未公开底牌。</td></tr>
+              <tr><td>中继 token 落入访问日志、代理或 CDN</td><td>中继鉴权 token 改走 WebSocket 子协议（Sec-WebSocket-Protocol），不再放在 URL 查询串中；服务端按 Chrome 149+ 规范 echo 回包。</td><td>token 不进入 URL 访问日志、代理日志或 CDN 缓存键，无法被外部审计/日志归集者收集。</td></tr>
+              <tr><td>账号密码或本地密钥被盗</td><td>账号密钥库用密码派生密钥本地 AES-GCM 加密；登录改发客户端 PBKDF2 派生的 authSecret，服务端只存其哈希、永远不接触明文密码，无法即时解开密钥库冒充玩家。</td><td>账号安全与发牌公平分层处理；身份恢复材料不参与牌序生成或赢家计算；服务端持库者也不能即时解开你的密钥库。</td></tr>
               <tr><td>玩家串通、共享屏幕或主动报牌</td><td>系统可显示脱敏的伙牌安全信号与同网络/同设备线索。</td><td>这类线下行为不改变"服务器不发牌、transcript 可复验"的证据链——但密码学也无法消灭线下串通（如实披露）。</td></tr>
-              <tr><td>替换前端代码或假冒官网</td><td>正式牌局客户端以 IPFS CID 固定；公开源码包有 SHA256 与 source fingerprint，可与官方发布身份比对。</td><td>官方 CID、源码包 SHA256 与 source fingerprint 提供可比对的发布身份。</td></tr>
+              <tr><td>替换前端代码或假冒官网</td><td>正式牌局客户端以 IPFS CID 固定；公开源码包有 SHA256 与 source fingerprint；浏览器在运行时拿 ai.json 中的权威 CID 与当前页面 CID 比对，安全面板亮"已锁定 / 不符 / 未从固定入口运行"。source fingerprint 覆盖认证、传输、启动、身份等完整信任边界文件，不仅是发牌核心。</td><td>替换前端、伪造镜像或非固定入口进入都会在安全面板触发不匹配状态；任何篡改可对照 SHA256 与 fingerprint 重新核验。</td></tr>
             </tbody>
           </table>
         </div>
+
+        <section id="redteam-round-1">
+          <span class="fp-eyebrow">红队实测 · Round 1</span>
+          <h2>第一轮模拟攻击日志</h2>
+          <p>发布白帽悬赏前，我们先以攻击者视角对平台做了一轮红队测试，覆盖 10 类攻击。对每一类，我们都<strong>先尝试真正打穿、再如实记录结果</strong>：能打穿的，写明怎么打穿、怎么修、是否已闭环；打不穿的，也照实写"已防护"。下面是这一轮的完整日志。</p>
+          <div class="fp-statrow">
+            <div class="fp-stat"><b>10</b><span>模拟攻击类别</span></div>
+            <div class="fp-stat"><b class="gold">5</b><span>曾可利用 · 已全部修复闭环</span></div>
+            <div class="fp-stat"><b class="em">4</b><span>实测未被打穿</span></div>
+            <div class="fp-stat"><b>1</b><span>行业固有 · 仅检测</span></div>
+          </div>
+          <div class="fp-table-wrap">
+            <table class="fp-log">
+              <thead><tr><th>编号</th><th>模拟攻击</th><th>我们怎么测的</th><th>结论与现状</th></tr></thead>
+              <tbody>
+                <tr><td>R1·01</td><td>仅凭公开参数推断隐藏牌（二次剩余残差泄露）</td><td>用线上真用的加密库与真实密钥跑完整发牌，以"只有公开参数、零解密钥"的攻击者视角推断每张暗牌。</td><td><span class="fp-pill fixed">已修复闭环</span>一度可把每张暗牌缩到约 13 种；现牌面改用二次剩余编码，残差指纹归零，PoC 复验泄露＝0 bit。</td></tr>
+                <tr><td>R1·02</td><td>弱加密参数被算力破解</td><td>评估发牌加密的密钥位数与可行攻击成本。</td><td><span class="fp-pill fixed">已修复闭环</span>原参数偏弱；现模数提升至 2048 位（1024 位质数），离散对数不可行，并设 2048 位上限。</td></tr>
+                <tr><td>R1·03</td><td>运营方中间人偷底牌</td><td>模拟恶意中继抢先注入伪造公钥，试图截获私发的逐卡钥匙。</td><td><span class="fp-pill held">实测未打穿</span>每张牌含玩家本地、永不出网的"自钥匙"层，缺它无法还原任何未摊牌底牌。</td></tr>
+                <tr><td>R1·04</td><td>恶意发牌者用"叠牌/重复牌"做假牌堆</td><td>让首位洗牌者用非法牌堆（如重复牌）开局，跑完整流程看是否被接受。</td><td><span class="fp-pill fixed">已修复闭环</span>一度可用假牌堆开局；现开牌时一旦发现同一张牌出现两次即判篡改、自动作废退还。</td></tr>
+                <tr><td>R1·05</td><td>伪造或篡改他人的签名动作</td><td>注入未签名／签名无效的伪造事件，冒充他人下注、弃牌。</td><td><span class="fp-pill held">实测未打穿</span>实时强制验签，未签或验签失败一律丢弃；攻击者造不出他人私钥的签名。</td></tr>
+                <tr><td>R1·06</td><td>非法下注（越筹码／抢回合／负数注）</td><td>直接向牌局引擎灌入越界与非法金额的下注动作。</td><td><span class="fp-pill held">实测未打穿</span>引擎校验非负整数、不超过自身筹码、不到回合即拒绝。</td></tr>
+                <tr><td>R1·07</td><td>中继自当裁判，篡改回合或座次</td><td>检查局内判定是否依赖中继下发的房间状态。</td><td><span class="fp-pill held">实测未打穿</span>座位、回合、轮到谁、赢家、底池均由各玩家浏览器用同一套 reducer 从签名事件本地算出；中继已降为哑中继，房间状态只剩"谁在线"提示，不参与任何局内判定。</td></tr>
+                <tr><td>R1·08</td><td>单方面作废、躲掉一手要输的牌</td><td>模拟全程在线的玩家谎称"打不下去"以触发作废退款。</td><td><span class="fp-pill fixed">已修复闭环</span>一度可借此赖账；现仅真断线／已暂停才作废退款，在线"赖账"被当作弃牌、照常输掉。</td></tr>
+                <tr><td>R1·09</td><td>玩家串通、多开、线下报牌</td><td>同一人用多账号同桌互通信息。</td><td><span class="fp-pill inherent">行业固有 · 仅检测</span>所有线上扑克都无法用密码学根除线下串通；我们提供启发式合谋风险信号，并如实披露这一边界。</td></tr>
+                <tr><td>R1·10</td><td>超大参数让全场卡死（拒绝服务）</td><td>伪造一个把加密位数设到极大值的开局事件。</td><td><span class="fp-pill fixed">已修复闭环</span>一度可让全场客户端卡死；现参数设 2048 位上限，超大请求被夹住。</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="fp-callout">
+            <p><strong>为什么连"被打穿过"也照实写？</strong>因为真实的红队一定有打穿项——我们更愿意展示"发现 → 修复 → 闭环"的完整能力，而不是声称从无破绽。上面 5 项"已修复闭环"都附带可复现的攻击脚本与全套测试验证（498 项测试全绿），并已随本次发布上线。</p>
+          </div>
+          <section id="redteam-round-2" style="margin-top:34px">
+            <span class="fp-eyebrow">红队实测 · Round 2</span>
+            <h3>第二轮模拟攻击日志</h3>
+            <p>第二轮我们把范围扩大、强度加深，钻进协议层、中继层和密码学退化这些更深的地方。好消息：平台大体扛住了——只在"玩家能不能踢玩家"上发现一个真漏洞并已修复闭环；其余深层向量经测试未被打穿。我们照例把打不穿的也逐条列出，并诚实标注一个待随状态重构加固的设计项。</p>
+            <div class="fp-statrow">
+              <div class="fp-stat"><b>7</b><span>深层攻击向量</span></div>
+              <div class="fp-stat"><b class="gold">1</b><span>发现并修复闭环</span></div>
+              <div class="fp-stat"><b class="em">5</b><span>实测未被打穿</span></div>
+              <div class="fp-stat"><b>1</b><span>已披露 · 随状态重构加固</span></div>
+            </div>
+            <div class="fp-table-wrap">
+              <table class="fp-log">
+                <thead><tr><th>编号</th><th>模拟攻击</th><th>我们怎么测的</th><th>结论与现状</th></tr></thead>
+                <tbody>
+                  <tr><td>R2·01</td><td>玩家踢玩家（占用他人 peerId 把人顶下线）</td><td>用受害者的 peerId（即其广播签名公钥的哈希，同房间人人可算）发起连接，触发中继"重复会话"踢人。</td><td><span class="fp-pill fixed">已修复闭环</span>中继现拒绝跨账号抢占同一 peerId——只有同一账号能替换自己的会话，别人无法借此把你顶下线。</td></tr>
+                  <tr><td>R2·02</td><td>边池 / all-in 分配错误、凭空造币</td><td>构造多人 all-in 的多层边池 + 平局拆分，逐场景核对筹码守恒与归属。</td><td><span class="fp-pill held">实测未打穿</span>分配正确且筹码严格守恒，未发现多付 / 少付 / 造币。</td></tr>
+                  <tr><td>R2·03</td><td>用退化 / 错误解密钥操纵或偷牌</td><td>让参与者用退化加密指数，或在揭示时故意发错误解密钥。</td><td><span class="fp-pill held">实测未打穿</span>最多让该牌解不开而触发作废，无法把牌翻成指定值，也偷看不到。</td></tr>
+                  <tr><td>R2·04</td><td>跨手 / 跨轮重放旧事件污染新局</td><td>把上一手的发牌 / 解密事件重放进新一手。</td><td><span class="fp-pill held">实测未打穿</span>事件按轮号作用域，并绑定签名 / 桌号 / 会话随机数，跨轮重放无效。</td></tr>
+                  <tr><td>R2·05</td><td>重连重放偷别人底牌</td><td>伪造 sinceSeq / peerId 重连，试图拉到发给别人的私有事件。</td><td><span class="fp-pill held">实测未打穿</span>中继按收件人过滤私有事件，且私有事件本就端到端密封——拉到也解不开。</td></tr>
+                  <tr><td>R2·06</td><td>中继分叉（给不同人发不同事件）致状态分裂</td><td>模拟中继向不同玩家投递不同的事件子集。</td><td><span class="fp-pill held">实测未打穿</span>各浏览器独立重算、分歧可由共识检测；属已知的"连线控制"边界，不会造成可传播的盗取。</td></tr>
+                  <tr><td>R2·07</td><td>局中改设置 / 开局缺"房主"权威</td><td>任意玩家 emit updateSettings / newRound 操纵盲注位或参与顺序。</td><td><span class="fp-pill inherent">已披露 · 待加固</span>当前无房主权限校验；不影响发牌公平与筹码守恒，列为状态重构的路线图项。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="fp-callout">
+              <p><strong>第二轮小结：</strong>越往深处钻，越能看出底子——这一轮 7 个更刁钻的向量里，只有 1 个真打穿（且已修复闭环），其余要么被现有设计挡住、要么属于已公开承认的连线边界。我们继续坚持"打穿的照实写、打不穿的也照实写"。</p>
+            </div>
+          </section>
+
+          <section id="redteam-round-3" style="margin-top:34px">
+            <span class="fp-eyebrow">红队实测 · Round 3</span>
+            <h3>第三轮模拟攻击日志</h3>
+            <p>第三轮我们改用"真编译记分员 + 真加密库"的直连注入：不改客户端，只用浏览器控制台一行命令，专攻"动钱"的记分员授权层和发牌密码学。这一轮没有粉饰——我们确实打穿了 4 个真洞（任一玩家一行命令就能逃账 / 销毁筹码 / 偷整池 / 偷看全桌底牌），并已逐个修复、各配可复现的 PoC 测试闭环。另有 2 项属"按预期保留"的设计内行为（中继排序边界、友谊桌一人多座），照例如实披露。</p>
+            <div class="fp-statrow">
+              <div class="fp-stat"><b>6</b><span>深层攻击向量</span></div>
+              <div class="fp-stat"><b class="gold">4</b><span>真打穿 · 已修复闭环</span></div>
+              <div class="fp-stat"><b class="em">2</b><span>设计内 · 已披露</span></div>
+              <div class="fp-stat"><b>0</b><span>未修复的真洞</span></div>
+            </div>
+            <div class="fp-table-wrap">
+              <table class="fp-log">
+                <thead><tr><th>编号</th><th>模拟攻击</th><th>我们怎么测的</th><th>结论与现状</th></tr></thead>
+                <tbody>
+                  <tr><td>R3·01</td><td>装死 / 伪造"散场"信号逃掉必输局并退款</td><td>在记分员上注入一条裸 hand/result，试图把进行中的牌局当作废、把已下注的筹码退回。</td><td><span class="fp-pill fixed">已修复闭环</span>记分员不再认裸 hand/result 当作废——退款只认"在座玩家全员签名同意"或客观掉线凭据（cannotContinue）。逃账被堵，附 PoC 测试。</td></tr>
+                  <tr><td>R3·02</td><td>局中按"重开"销毁锅里筹码 / 塞重复的自己</td><td>牌局进行中注入 newRound（重置 / 覆盖局号 / 名单塞两个自己），试图让锅里的筹码凭空蒸发或一人占两座。</td><td><span class="fp-pill fixed">已修复闭环</span>记分员现做：同局号幂等不覆盖、未结算不许开新局、座位名单去重并校验≥2 人。筹码不再被销毁，重复座位被剔除，附 PoC 测试。</td></tr>
+                  <tr><td>R3·03</td><td>喊"对面超时了"折叠任意对手、偷整池</td><td>注入 autoFold 把对手的牌掀掉直接赢池：既试"指向并非当前行动的对手"，也试"先把回合让给对手、紧接着秒判他超时"。</td><td><span class="fp-pill fixed">已修复闭环</span>中继给每条消息盖"服务器收件时间戳"（可信时钟），记分员只在 ① target 确是当前该行动的人、且 ② 时间戳显示真的过了超时秒数 时才判弃牌——"任意时刻折叠任意对手"与"0 秒抢判超时"两种偷法都被堵死；真实超时自动弃牌、牌局继续的体验不变。附 PoC（抢跑被拒 / 真超时正常）。</td></tr>
+                  <tr><td>R3·04</td><td>首家塞弱 / 合成 / 光滑模数，零钥匙偷看全桌底牌</td><td>让第一个洗牌的人广播一个一捅就开的加密模数（如 {p:15,q:21}、大合数、或 p−1 全是小因子的"光滑"素数），仅凭密文反推底牌。</td><td><span class="fp-pill fixed">已修复闭环</span>收到模数即强校验：每个素数≥1024 位、Miller–Rabin 素性、且 p−1 含可验证的大素因子（抗 Pohlig–Hellman）；生成端同步改为产此结构的素数。弱 / 合数 / 光滑模数一律拒收，附 PoC 测试。</td></tr>
+                  <tr><td>R3·05</td><td>中继靠重排消息先后顺序改输赢</td><td>模拟中继对同一批签名事件用不同投递顺序，观察能否改变筹码归属。</td><td><span class="fp-pill inherent">设计内 · 已披露</span>各浏览器独立重算、分歧可由共识检测，属已公开的"连线控制"边界；本轮按预期保留，不计为待修真洞。</td></tr>
+                  <tr><td>R3·06</td><td>一人戴多个面具坐同一桌</td><td>同一账号用多个身份在同桌占多座。</td><td><span class="fp-pill inherent">设计内 · 已披露</span>play-money 友谊桌按预期允许，靠对账 / 告警约束；不影响发牌公平与筹码守恒，本轮按预期保留。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="fp-callout">
+              <p><strong>第三轮小结：</strong>这一轮我们不挑软柿子——直攻"动钱"的记分员与发牌密码学，结果确实揪出 4 个真洞（逃账 / 销毁筹码 / 偷池 / 偷牌），并已逐个修复、各配可复现 PoC 闭环；另 2 项是已公开承认的设计内边界。打穿的照实写、修好的给证据，是我们一以贯之的原则。</p>
+            </div>
+          </section>
+
+          <section id="redteam-round-4" style="margin-top:34px">
+            <span class="fp-eyebrow">红队实测 · Round 4</span>
+            <h3>第四轮模拟攻击日志</h3>
+            <p>第四轮我们做了两件事：①把前三轮 23 个项目在"改了大量代码之后"<strong>全部重测一遍</strong>（确认旧洞没被新改动改活）；②换更狠的视角钻得更深。复审阶段如实标出 2 个真打穿并各附修法；随后我们把能根治的<strong>当场修掉</strong>：<strong>R4·01（中继时间戳）已修复闭环</strong>（自动弃牌改为自我授权、彻底不再信中继时钟，598 项测试全绿并复跑了攻击 PoC）；<strong>R4·08（全下掉线赖账）</strong>经深入评估属去中心化扑克在"无可信服务器、无零知识证明"下的固有取舍——简单的"托管钥匙/没收筹码"都会顾此失彼（见该行说明），故如实披露、列入零知识可验证发牌的根治路线，当前保留对官方最安全的"退款"处理。随后的<strong>全面复查</strong>又揪出 2 个真问题并<strong>已当场修复</strong>：R4·11（红桃A 因编码成"1"而在加密牌堆里露馅）、R4·12（玩家自助复验工具与新编码不同步、认错牌），均已修好并复跑验证。</p>
+            <div class="fp-statrow">
+              <div class="fp-stat"><b>12</b><span>深度 + 回归向量</span></div>
+              <div class="fp-stat"><b class="gold">4</b><span>真打穿（3 已修复闭环 · 1 待根治）</span></div>
+              <div class="fp-stat"><b class="em">7</b><span>实测未被打穿</span></div>
+              <div class="fp-stat"><b>1</b><span>设计内 · 已披露</span></div>
+            </div>
+            <div class="fp-table-wrap">
+              <table class="fp-log">
+                <thead><tr><th>编号</th><th>模拟攻击</th><th>我们怎么测的</th><th>结论与现状</th></tr></thead>
+                <tbody>
+                  <tr><td>R4·01</td><td>官方中继伪造"超时时钟"强折对手、吞争议池</td><td>用真记分员对同一条弃牌指令对比：诚实的服务器收件时间 vs 中继自己填的时间。</td><td><span class="fp-pill fixed">已修复闭环</span>原先堵"喊超时偷牌"靠的是中继盖的时间戳，而该时间戳不进签名、不进牌局指纹，恶意中继与某座位合谋即可伪造它强折一个在场对手。<strong>已修复</strong>：自动弃牌改为"自我授权"——只有玩家<strong>本人客户端（自折）</strong>或<strong>目标确已掉线</strong>才会被弃牌，记分员不再用中继时间戳判定超时。中继即便伪造时间戳也折不动一个在场对手（没有他的签名私钥）。真超时仍由本人客户端自折、掉线者可被折以免卡桌，功能不变；598 项测试全绿并复跑了本攻击的 PoC（伪造时间戳已无效）。</td></tr>
+                  <tr><td>R4·02</td><td>打到一半喊"作废"逃掉必输局并退款（E-1 回归）</td><td>注入裸"散场"信号、孤张作废票、以及在线状态下喊"打不下去"。</td><td><span class="fp-pill held">实测未打穿</span>退款只认"在座玩家全员签名同意"或客观掉线凭据；在线赖账一律当作弃牌、照常输掉。</td></tr>
+                  <tr><td>R4·03</td><td>按"重开"销毁锅里筹码 / 塞重复的自己（E-2 回归）</td><td>局中重开、座位名单塞两个自己、覆盖已有局号。</td><td><span class="fp-pill held">实测未打穿</span>同局号幂等不覆盖、未结算不许开新局、座位去重并校验≥2 人，筹码不被销毁。</td></tr>
+                  <tr><td>R4·04</td><td>首家塞弱 / 合数 / 光滑加密模数，零钥匙偷看全桌</td><td>用真校验器收 {15,21}、大合数、p−1 全是小因子的"光滑"素数、以及相等模数。</td><td><span class="fp-pill held">实测未打穿</span>全部拒收——其中一个 1024 位以上的真素数也仅因结构偏弱被拒；诚实生成的模数正常通过、不误伤。</td></tr>
+                  <tr><td>R4·05</td><td>海量乱来的指令想凭空生 / 灭筹码</td><td>8000 条随机 + 畸形 + 对抗日志（负注、天价、小数、垃圾身份、越界局号、重复名单）灌进真记分员。</td><td><span class="fp-pill held">实测未打穿</span>筹码守恒铁桶：零铸币、零销毁、零负数、零崩溃。</td></tr>
+                  <tr><td>R4·06</td><td>拦截 / 重定向别人的底牌解密钥匙</td><td>拦截密封钥匙，并把它改当成别的牌位 / 局 / 发件人来开。</td><td><span class="fp-pill held">实测未打穿</span>钥匙端到端锁定收件人，并绑定牌位 / 局 / 发件人；换人、换牌位、换局全都开不了，密文被篡改即拒。</td></tr>
+                  <tr><td>R4·07</td><td>顶人下线 / 塞系统幽灵占座 / 打乱顺序改输赢</td><td>跨账号抢占他人身份、让"系统中继"混进玩家名单、同一套事件用多种投递顺序。</td><td><span class="fp-pill held">实测未打穿（连线边界已披露）</span>跨账号抢身份被拒、系统幽灵进不了牌桌；打乱投递顺序确会改变"中途归属"，但筹码仍严格守恒、各端可凭记录指纹对账发现分歧——属早已公开承认的连线控制边界。</td></tr>
+                  <tr><td>R4·08</td><td>全下后掉线，赖掉必输局、退回本金</td><td>真记分员：两人全下后，快输的一方离线并扣住自己的公共牌钥匙。</td><td><span class="fp-pill open">已披露 · 待零知识根治</span>全下后只剩翻公共牌。快输一方掉线且不发解牌钥匙 → 对手翻不出板 → 系统判"打不下去" → 整把作废退款。不是偷钱（双方都退回本金），但把"大概率输"变成"100% 退款"，反复用即占诚实对手便宜。在线赖账仍被堵，只剩"真掉线"这条。深入评估后，简单修法都顾此失彼：①"全下即托管全部公共牌钥匙"——诚实客户端本就这么做（所以真断线能照常分胜负），但<strong>挡不住故意改造客户端、就是不发钥匙</strong>的人；②"掉线就没收判负"能去掉赖账，却<strong>给了官方新作弊面</strong>——掌控连线的官方可在钥匙广播前掐断受害者连接逼其判负，反而踩"官方只控连线"的红线。真正的根治是<strong>零知识可验证发牌</strong>（公共牌可凭公开承诺独立翻出、无需任何人事后配合），已列入路线图。当前保留对官方最安全的"退款"处理，并可在账号层对反复掉线赖账做检测告警。</td></tr>
+                  <tr><td>R4·09</td><td>伪造 / 篡改他人签名动作、跨桌重放</td><td>真签名后篡改下注金额、冒名、跨桌搬运、改会话随机数。</td><td><span class="fp-pill held">实测未打穿</span>验签覆盖整条信封，改任一处即失效；造不出他人私钥的签名；跨桌 / 跨会话重放被绑定校验拒掉。</td></tr>
+                  <tr><td>R4·10</td><td>撬开别人的保险箱 / 账号</td><td>真加密：用错密码、别人的密码、以及服务端所存的登录凭据去开保险箱。</td><td><span class="fp-pill held">实测未打穿</span>保险箱用密码本地加密，与服务端登录凭据域分离；错密码、他人密码、服务端凭据都开不了，数据库查询全参数化、无注入。（另有登录限速、会话轮换、常量时间比较三项纵深加固待补——不让任何人作弊，仅为防穷举 / 长效会话。）</td></tr>
+                  <tr><td>R4·11</td><td>零钥匙在加密牌堆里认出某张特定牌（红桃A 不动点）</td><td>用真发牌编码 + 真模数加密整副牌，逐张看公开密文里有没有"一眼能认出"的。</td><td><span class="fp-pill fixed">已修复闭环</span>原编码把红桃A 记成数字"1"，而"1"的任何加密都还是"1"（不动点），导致它在公开加密牌堆里密文恒为"1"、零钥匙就能认出该牌及其位置（其余 51 张安全）。<strong>已修复</strong>：发牌编码改为 (序号+1)²（值域 4–2809），仍是完全平方（保持原有的零残差泄露性质），但避开了 0/1 不动点——真加密牌堆里再无"一眼可认"的密文。附 PoC（红桃A 不再露馅）+ 全量测试绿。</td></tr>
+                  <tr><td>R4·12</td><td>玩家"自助复验"工具认错牌</td><td>把客户端真实编码喂给独立复验脚本的认牌逻辑，逐张核对。</td><td><span class="fp-pill fixed">已修复闭环</span>独立复验脚本的"认牌本子"还停在旧编号，与客户端的平方编码不同步——52 张只认对 1 张、其余解错或报错（验签 / 牌堆完整 / 记录指纹等不依赖认牌的检查不受影响）。<strong>已修复</strong>：两份复验脚本改为"先开方还原序号再解牌"，与新编码对齐；现 52 张全部正确解出。"自己复验"链恢复可靠。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="fp-callout">
+              <p><strong>第四轮小结：</strong>这一轮把前三轮 23 项全部重测，确认大量改动后旧洞没有复活；地基（验签 / 底牌端到端密封 / 赢家由真解出的牌算 / 账号 / 筹码守恒）依旧扎实，7 个深层向量实测未被打穿。我们也诚实揪出 <strong>2 个真洞</strong>：官方层的 R4·01（中继时间戳超出"只控连线"）<strong>已修复闭环</strong>——自动弃牌改为自我授权、彻底不再信中继时钟；玩家层的 R4·08（全下掉线赖账）是去中心化扑克的固有取舍，简单修法会顾此失彼（见该行），故如实披露、留待零知识可验证发牌根治，当前保留对官方最安全的退款处理。打穿的照实写、能根治的修掉给证据、暂不能两全的如实说明，是我们一以贯之的原则。</p>
+            </div>
+
+            <section id="redteam-round-4-full" style="margin-top:34px">
+              <span class="fp-eyebrow">全面复查 · Full re-audit</span>
+              <h3>前三轮 23 项逐条复跑 + 新增 8 向量</h3>
+              <p>不止重测结论——我们把前三轮 23 个攻击在当前代码上<strong>逐条用真代码重新打了一遍</strong>（覆盖验签、发牌加密、记分员动钱、中继、账号全栈），并新增 8 个角度。除前述 R4·01（已修复）、R4·08（已披露）外，<strong>全部实测未被打穿</strong>，旧洞无一复活。</p>
+              <div class="fp-statrow">
+                <div class="fp-stat"><b>31</b><span>逐条复查项</span></div>
+                <div class="fp-stat"><b class="em">26</b><span>实测未被打穿</span></div>
+                <div class="fp-stat"><b class="gold">1</b><span>已修复闭环</span></div>
+                <div class="fp-stat"><b>4</b><span>设计内 · 已披露</span></div>
+              </div>
+              <div class="fp-table-wrap">
+                <table class="fp-log">
+                  <thead><tr><th>编号</th><th>模拟攻击</th><th>当前代码复跑结论</th></tr></thead>
+                  <tbody>
+                    <tr><td>R1·01</td><td>仅凭公开参数推断暗牌（残差泄露）</td><td><span class="fp-pill held">未打穿</span>真模数勒让德符号：52 张牌指纹一致、泄露 0 比特</td></tr>
+                    <tr><td>R1·02</td><td>弱加密位数被破解</td><td><span class="fp-pill held">未打穿</span>位数下限 1024（2048 位模数），上限封顶</td></tr>
+                    <tr><td>R1·03</td><td>运营方中间人偷底牌</td><td><span class="fp-pill held">未打穿</span>缺对方逐卡钥匙还原不出任何底牌（大随机/非平方均解不出）</td></tr>
+                    <tr><td>R1·04</td><td>用重复牌做假牌堆</td><td><span class="fp-pill held">未打穿</span>真审计：重复密文当场判篡改告警</td></tr>
+                    <tr><td>R1·05</td><td>伪造/篡改他人签名动作</td><td><span class="fp-pill held">未打穿</span>真 ECDSA：篡改/冒名/跨桌重放全拒</td></tr>
+                    <tr><td>R1·06</td><td>非法下注（越筹码/抢回合/负数）</td><td><span class="fp-pill held">未打穿</span>校验非负安全整数、不超自身筹码</td></tr>
+                    <tr><td>R1·07</td><td>中继自当裁判改回合/座次</td><td><span class="fp-pill held">未打穿</span>座位/回合/赢家全由浏览器从签名日志算</td></tr>
+                    <tr><td>R1·08</td><td>单方作废躲掉必输牌</td><td><span class="fp-pill held">未打穿</span>退款只认全员签名同意或客观掉线凭据</td></tr>
+                    <tr><td>R1·09</td><td>玩家串通/多开/线下报牌</td><td><span class="fp-pill inherent">行业固有 · 仅检测</span>密码学无法根除线下串通，提供合谋信号</td></tr>
+                    <tr><td>R1·10</td><td>超大参数让全场卡死</td><td><span class="fp-pill held">未打穿</span>位数夹在 1024–2048，超大被夹住</td></tr>
+                    <tr><td>R2·01</td><td>玩家踢玩家（占用他人身份）</td><td><span class="fp-pill held">未打穿</span>中继拒绝跨账号抢占同一身份（返回 409）</td></tr>
+                    <tr><td>R2·02</td><td>边池/all-in 分配错误、凭空造币</td><td><span class="fp-pill held">未打穿</span>短栈封顶正确、严格守恒、平局平分（真分配函数）</td></tr>
+                    <tr><td>R2·03</td><td>用退化/错误解密钥操纵或偷牌</td><td><span class="fp-pill held">未打穿</span>错钥匙翻不成指定值、还原不出，只会得无效牌→作废</td></tr>
+                    <tr><td>R2·04</td><td>跨手/跨轮重放旧事件污染新局</td><td><span class="fp-pill held">未打穿</span>事件按局号作用域，陈旧事件碰不到现局</td></tr>
+                    <tr><td>R2·05</td><td>重连重放偷别人底牌</td><td><span class="fp-pill held">未打穿</span>私有事件按收件人过滤且端到端密封</td></tr>
+                    <tr><td>R2·06</td><td>中继分叉致状态分裂</td><td><span class="fp-pill inherent">设计内 · 已披露</span>各端独立重算、分歧可由共识检测</td></tr>
+                    <tr><td>R2·07</td><td>局中改设置/缺房主权威</td><td><span class="fp-pill held">未打穿</span>改设置对记分员无任何动钱权</td></tr>
+                    <tr><td>R3·01</td><td>装死/伪造散场逃账退款</td><td><span class="fp-pill held">未打穿</span>裸散场信号不退款（同 R1·08）</td></tr>
+                    <tr><td>R3·02</td><td>局中重开销毁筹码/塞重复的自己</td><td><span class="fp-pill held">未打穿</span>同局号幂等、去重、未结算不许开新局</td></tr>
+                    <tr><td>R3·03</td><td>喊"对面超时"折叠对手偷整池</td><td><span class="fp-pill fixed">已修复闭环</span>本轮改自我授权（见 R4·01），彻底不再信中继时钟</td></tr>
+                    <tr><td>R3·04</td><td>塞弱/光滑模数零钥匙偷看全桌</td><td><span class="fp-pill held">未打穿</span>弱/合数/光滑/相等模数强校验全拒（见 R4·04）</td></tr>
+                    <tr><td>R3·05</td><td>中继靠重排消息改输赢</td><td><span class="fp-pill inherent">设计内 · 已披露</span>重排会改中途归属但筹码严格守恒、可对账</td></tr>
+                    <tr><td>R3·06</td><td>一人戴多面具坐同桌</td><td><span class="fp-pill inherent">设计内 · 已披露</span>友谊桌按预期允许，靠对账/告警</td></tr>
+                    <tr><td>N1</td><td>平局平分（含奇数筹码）</td><td><span class="fp-pill held">未打穿</span>平分守恒、单数筹码完整归账</td></tr>
+                    <tr><td>N2</td><td>事件格式模糊（畸形牌堆/超大整数/原型污染）</td><td><span class="fp-pill held">未打穿</span>真校验器畸形全拒、合法不误伤、原型污染进不去</td></tr>
+                    <tr><td>N3</td><td>记录链式指纹篡改（增/删/改/换序）</td><td><span class="fp-pill held">未打穿</span>真复验器对改/删/换序/插入重复全部识破</td></tr>
+                    <tr><td>N4</td><td>记录指纹确定性/原型污染</td><td><span class="fp-pill held">未打穿</span>字段顺序无关同指纹、NaN/无穷被拒、无污染</td></tr>
+                    <tr><td>N5</td><td>反复补码刷分</td><td><span class="fp-pill held">未打穿</span>补码记入买入，净盈亏为负不可刷正，守恒</td></tr>
+                    <tr><td>N6</td><td>坐离/回桌操纵回合或逃盲</td><td><span class="fp-pill held">未打穿</span>坐离扣不回已下盲注、被判弃，守恒</td></tr>
+                    <tr><td>N7</td><td>非在座玩家投作废票/喊停</td><td><span class="fp-pill held">未打穿</span>记分员校验在座名单，外人投票被忽略不退款</td></tr>
+                    <tr><td>N8</td><td>认领他人底牌（改牌位/收件人）</td><td><span class="fp-pill held">未打穿</span>钥匙绑定收件人/牌位/局/发件人，重定向全拒（见 R4·06）</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+        </section>
+
+        <h2>每一手都自带 4 灯公平校验</h2>
+        <p>每局结束后，浏览器自动跑 4 项校验并以可视化覆盖层告知结果：<strong>① 牌堆完整</strong>（52 张唯一、无重复）·<strong>② 全员参与洗牌</strong>（每位玩家都完成 shuffle + lock）·<strong>③ 记录指纹一致</strong>（可与其他玩家比对 canonicalHandHash）·<strong>④ 签名齐全</strong>。通过盖"已验证"印，异常红灯并提示下载证据。这是被动证据之外的主动告警层——可疑事件不需要你自己去 grep transcript。</p>
+
         <h2>用户建议</h2>
         <ul class="fp-tips">
           <li>只从 <code>fairpoker.app</code> 或官网公布的 IPFS CID 进入牌桌。</li>
           <li>重要牌局优先注册账号、使用强密码，并避免在装有可疑扩展的浏览器里玩。</li>
-          <li>下载 transcript 后，可按 <a href="./verify-guide.html">复验教程</a> 在本地亲手复验。</li>
+          <li>留意每手结束的 4 灯公平校验覆盖层；任何红灯都可在牌桌安全面板下载证据。</li>
+          <li>下载 transcript 后，可按 <a href="./verify-guide.html">独立验证指南</a> 在本地亲手复验。</li>
         </ul>
       </div>
 
@@ -139,25 +336,207 @@
         <div class="fp-callout">
           <p><strong>Key conclusion:</strong> spoofing User-Agent, browser language, timezone, IP, or account/device identity can affect sanitized safety signals, but it does not grant access to other players' private cards. Hole cards require per-card decryption keys held by the relevant player's browser, released only to that player or during public reveal.</p>
         </div>
+        <div class="fp-callout">
+          <p><strong>Operator power boundary:</strong> the Cloudflare Worker only orders and forwards signed messages and reports who is online; it computes <strong>no</strong> seats, rounds, turn order, winners, or chips — that game logic was removed from the relay (its <code>buildRoomState</code> now returns presence only). Every browser folds the signed event log into the full table state with the <strong>same deterministic reducer</strong>, so two browsers reading the same log necessarily agree, and a refresh/reconnect re-derives the identical state. There is no protocol path for the relay to kick a player out of a hand, seize chips, force the next deal, rewrite winners, or peek at unrevealed hole cards. The relay dropping a socket only triggers client-side auto-reconnect — it cannot change game state or take a seat or chips, and any such drop is attributable and recorded.</p>
+        </div>
         <h2>Attack surface and defense boundary</h2>
         <div class="fp-table-wrap">
           <table>
             <thead><tr><th>Attack</th><th>Defense</th><th>Verification result</th></tr></thead>
             <tbody>
-              <tr><td>Browser or device spoofing</td><td>Environment data is only a sanitized safety signal; it does not drive dealing, decryption, or results.</td><td>Device signals do not grant card visibility, deck control, or result-editing power.</td></tr>
-              <tr><td>Trying to see another player's cards</td><td>Cards are revealed through multi-step per-card decryption. Private decrypt events go only to the intended player until public reveal. Per-card decrypt keys are kept on your device only for the duration of the current hand and are erased when it ends; never retained long-term.</td><td>Private dealing messages are end-to-end encrypted to the recipient — the relay sees only ciphertext and gets neither per-card keys nor any unrevealed hole card. Other players only receive messages addressed to them.</td></tr>
-              <tr><td>Tampering with actions or results</td><td>Player events are signed and checked against signature, sender, and payload hash. The transcript hash-chain preserves order and content.</td><td>Editing, deleting, reordering events, or changing winners breaks signature, payload-hash, or hash-chain replay checks.</td></tr>
-              <tr><td>Relay server attack</td><td>Fair Poker uses a Cloudflare Worker as a lightweight WebSocket edge relay — not a traditional dealing server or self-hosted VPS backend. It forwards signed messages and holds no plaintext deck, player private keys, or full decrypt keys. Private dealing is end-to-end encrypted.</td><td>The relay cannot forge or alter signed events, nor act like a centralized RNG dealer that chooses the card order; it sees neither per-card keys nor unrevealed hole cards.</td></tr>
-              <tr><td>Account password or local key theft</td><td>The vault is encrypted locally with a password-derived key; login sends a client-derived authSecret, and the server stores only its hash and never touches the plaintext password.</td><td>Account security is layered separately from deck generation and winner computation; recovery material does not feed card order or results.</td></tr>
+              <tr><td>Operator / relay tries to remove a player or seize chips</td><td>The protocol has no "operator kick" event type and no centralized referee. Bets, folds, sit-outs must come from the player's own signed action; only when continuation is impossible does a unanimous-void path refund the hand in full. The relay closing a WebSocket only triggers exponential-backoff auto-reconnect on the client and changes no state.</td><td>The relay has no protocol path to unilaterally remove players, seize chips, or rewrite winners; abnormal drops are attributable.</td></tr>
+              <tr><td>Refresh, network jitter, or forced redirect tries to push you off the table</td><td>Browser is the sole authority: seats, pot, turn order, and winner are all computed by your browser with the same deterministic reducer over the signed event log — never from relay-pushed room state. After reconnect, sinceSeq replays missed messages to complete the log, then the browser re-derives state identical to everyone else's; returning while it's your turn resumes that turn instead of sitting you out.</td><td>Refresh, brief network drops, or network switches cannot teleport you to the spectator rail; your seat is computed by your browser from the signed log, so the relay's opinion on your presence never overrides it.</td></tr>
+              <tr><td>Trying to see another player's cards</td><td>Cards are revealed through multi-step per-card decryption. Each private decrypt key is end-to-end sealed to the recipient's public key (RSA-OAEP) and bound to sender / recipient / round / cardOffset, so ciphertext redirected to a different recipient or card position is rejected. Per-card decrypt keys are kept on your device only for the duration of the current hand and are erased when it ends; never retained long-term.</td><td>The relay only ever sees ciphertext — never per-card keys or unrevealed hole cards. Other players only receive messages addressed to them; keys replayed at a wrong position are rejected by binding checks.</td></tr>
+              <tr><td>Tampering with actions, deals, ordering, or results</td><td>Each event is signed and bound to a tableId and sessionNonce; receivers verify signature, sender, payload hash, table id, and session sequence. The transcript hash-chain preserves order and content. Strict schema validation rejects malformed input (the deck must be 52 valid ciphertexts, bets must be non-negative safe integers, key lengths are bounded).</td><td>Edits, deletions, reordering, winner changes, cross-table replay, or in-session replay all break signature, table binding, hash-chain replay, or schema checks.</td></tr>
+              <tr><td>Relay server tries to peek at, control, or pick the card order</td><td>Fair Poker uses a Cloudflare Worker as a lightweight WebSocket edge relay — not a traditional dealing server or self-hosted VPS backend. It only forwards signed messages, never deals cards, and holds no signing keys or vault. Private dealing is end-to-end sealed; the deck is jointly shuffled and locked by every player.</td><td>The relay cannot forge or alter signed events nor act like a centralized RNG dealer; it sees neither per-card keys nor unrevealed hole cards.</td></tr>
+              <tr><td>Relay auth token leaking into access logs, proxies, or CDNs</td><td>The relay auth token now travels in the WebSocket subprotocol (Sec-WebSocket-Protocol), not the URL query string; the server echoes it verbatim to satisfy the Chrome 149+ handshake.</td><td>The token never enters URL access logs, proxy logs, or CDN cache keys; it is not collectible by external auditors or log aggregators.</td></tr>
+              <tr><td>Account password or local key theft</td><td>The vault is encrypted locally with a password-derived key via AES-GCM. Login sends a client-side PBKDF2-derived authSecret; the server stores only its hash, never touches the plaintext password, and cannot open the vault on demand to impersonate you.</td><td>Account security is layered separately from deck generation and winner computation; recovery material does not feed card order or results, and a server that holds the database still cannot open your vault.</td></tr>
               <tr><td>Collusion, screen sharing, or telling cards</td><td>The system can surface sanitized collusion signals and same-network / same-device hints.</td><td>This out-of-band behavior does not change the server-not-dealer, replayable-transcript evidence chain — but cryptography also cannot eliminate off-table collusion (disclosed plainly).</td></tr>
-              <tr><td>Fake frontend or code replacement</td><td>The table client is pinned by IPFS CID; the source archive SHA256 and source fingerprint can be compared against the official release identity.</td><td>Published CIDs, archive SHA256, and source fingerprint give the release identity a public comparison target.</td></tr>
+              <tr><td>Fake frontend or code replacement</td><td>The table client is pinned by IPFS CID; the source archive SHA256 and source fingerprint can be compared against the official release identity. At runtime the browser fetches the authoritative CID from ai.json and compares it with the running CID, and the security panel shows locked / mismatch / not pinned. The source fingerprint covers auth, transport, bootstrap, and identity files — the full trust boundary, not just the dealing core.</td><td>Replaced frontends, fake mirrors, or non-pinned entry points raise a mismatch in the security panel; any tampering can be re-checked against published SHA256 and fingerprint.</td></tr>
             </tbody>
           </table>
         </div>
+
+        <section id="redteam-round-1">
+          <span class="fp-eyebrow">Red-team · Round 1</span>
+          <h2>Round 1 — simulated-attack log</h2>
+          <p>Before opening a white-hat bounty, we ran our own red-team pass against the platform across 10 classes of attack. For each one we <strong>genuinely tried to break it first, then recorded the result honestly</strong>: where an attack worked, we describe how it worked, how we fixed it, and whether it is closed; where it didn't, we simply mark it defended. The full log is below.</p>
+          <div class="fp-statrow">
+            <div class="fp-stat"><b>10</b><span>attack classes simulated</span></div>
+            <div class="fp-stat"><b class="gold">5</b><span>were exploitable · all fixed &amp; closed</span></div>
+            <div class="fp-stat"><b class="em">4</b><span>held under testing</span></div>
+            <div class="fp-stat"><b>1</b><span>industry-inherent · detection only</span></div>
+          </div>
+          <div class="fp-table-wrap">
+            <table class="fp-log">
+              <thead><tr><th>ID</th><th>Simulated attack</th><th>How we tested it</th><th>Result &amp; status</th></tr></thead>
+              <tbody>
+                <tr><td>R1·01</td><td>Inferring hidden cards from public parameters only (quadratic-residue leak)</td><td>Ran a full deal with the exact crypto library and real key sizes used in production, as an attacker holding only public parameters and zero decryption keys.</td><td><span class="fp-pill fixed">fixed &amp; closed</span>Once narrowed every hidden card to ~13 of 52; cards are now encoded as quadratic residues so the residue fingerprint leaks nothing — PoC re-check shows 0 bits leaked.</td></tr>
+                <tr><td>R1·02</td><td>Cracking weak encryption parameters</td><td>Assessed the dealing key size and the cost of a feasible attack.</td><td><span class="fp-pill fixed">fixed &amp; closed</span>The old parameters were too small; the modulus is now 2048-bit (1024-bit primes), making discrete-log infeasible, with a 2048-bit ceiling.</td></tr>
+                <tr><td>R1·03</td><td>Operator man-in-the-middle to steal hole cards</td><td>Simulated a malicious relay injecting a forged public key first to intercept privately-sealed per-card keys.</td><td><span class="fp-pill held">held under testing</span>Every card carries a player-local "self key" that never leaves the device; without it no unrevealed hole card can be reconstructed.</td></tr>
+                <tr><td>R1·04</td><td>Malicious dealer stacking a rigged / duplicate deck</td><td>Had the first shuffler start from an illegal deck (e.g. duplicate cards) and ran the full flow to see if it was accepted.</td><td><span class="fp-pill fixed">fixed &amp; closed</span>Once accepted; now if the same card is dealt twice the deck is flagged as tampered and the hand is voided and refunded on the spot.</td></tr>
+                <tr><td>R1·05</td><td>Forging or altering another player's signed actions</td><td>Injected unsigned / invalid-signature forged events impersonating others' bets and folds.</td><td><span class="fp-pill held">held under testing</span>Signatures are enforced live; unsigned or invalid events are dropped, and an attacker cannot produce another player's private-key signature.</td></tr>
+                <tr><td>R1·06</td><td>Illegal bets (over-stack / out-of-turn / negative)</td><td>Fed out-of-bounds and illegal bet amounts straight into the game engine.</td><td><span class="fp-pill held">held under testing</span>The engine rejects non-integer, negative, over-stack, and out-of-turn actions.</td></tr>
+                <tr><td>R1·07</td><td>Relay acting as referee to alter turn order or seating</td><td>Checked whether in-hand decisions depend on relay-pushed room state.</td><td><span class="fp-pill held">held under testing</span>Seats, turn order, winner, and pot are all computed by each player's browser with the same reducer over the signed events; the relay is now a dumb relay whose room state carries only "who is online" and takes no part in any in-hand decision.</td></tr>
+                <tr><td>R1·08</td><td>Unilaterally voiding a hand to dodge a loss</td><td>Simulated a fully-connected player falsely claiming it "cannot continue" to trigger a void-and-refund.</td><td><span class="fp-pill fixed">fixed &amp; closed</span>Once usable to dodge; now only a genuine disconnect / paused hand voids and refunds — a connected player's false claim is treated as a fold and the loss stands.</td></tr>
+                <tr><td>R1·09</td><td>Player collusion, multi-accounting, telling cards</td><td>One person using multiple accounts at one table to share information.</td><td><span class="fp-pill inherent">inherent · detection only</span>No online poker can eliminate off-table collusion cryptographically; we surface heuristic collusion signals and disclose this boundary honestly.</td></tr>
+                <tr><td>R1·10</td><td>Giant parameters to freeze the whole table (DoS)</td><td>Forged a start event setting the encryption bit size to an enormous value.</td><td><span class="fp-pill fixed">fixed &amp; closed</span>Once froze every client; the bit size is now capped at 2048, so oversized requests are clamped.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="fp-callout">
+            <p><strong>Why publish the attacks that worked, too?</strong> A real red-team always has hits — we'd rather show the full "find → fix → close the loop" capability than claim we were flawless. Each of the five "fixed &amp; closed" items ships with a reproducible attack script and a full test pass (498 tests green), and is already live in this release.</p>
+          </div>
+          <section id="redteam-round-2" style="margin-top:34px">
+            <span class="fp-eyebrow">Red-team · Round 2</span>
+            <h3>Round 2 — simulated-attack log</h3>
+            <p>For Round 2 we widened the scope and raised the intensity, digging into the protocol layer, the relay layer, and cryptographic-degeneracy cases. The good news: the platform mostly held — we found one real vulnerability (a player being able to kick another player) and closed it, while the other deeper vectors held under testing. As always we list the ones that held too, and honestly flag one design item to be hardened with the planned state rework.</p>
+            <div class="fp-statrow">
+              <div class="fp-stat"><b>7</b><span>deep attack vectors</span></div>
+              <div class="fp-stat"><b class="gold">1</b><span>found &amp; fixed / closed</span></div>
+              <div class="fp-stat"><b class="em">5</b><span>held under testing</span></div>
+              <div class="fp-stat"><b>1</b><span>disclosed · hardening with state rework</span></div>
+            </div>
+            <div class="fp-table-wrap">
+              <table class="fp-log">
+                <thead><tr><th>ID</th><th>Simulated attack</th><th>How we tested it</th><th>Result &amp; status</th></tr></thead>
+                <tbody>
+                  <tr><td>R2·01</td><td>Player kicking another player (hijacking someone's peerId)</td><td>Connected using the victim's peerId (the hash of their signing public key, which is broadcast in every signed event and computable by anyone at the table) to trigger the relay's "duplicate session" eviction.</td><td><span class="fp-pill fixed">fixed &amp; closed</span>The relay now refuses to let one account claim a peerId already held by another account — only the same account can replace its own session, so no one can use this to knock you off the table.</td></tr>
+                  <tr><td>R2·02</td><td>Side-pot / all-in mis-allocation or minting chips</td><td>Built multi-player all-in side pots plus tie splits and checked chip conservation and ownership case by case.</td><td><span class="fp-pill held">held under testing</span>Allocation is correct and chips are strictly conserved — no over-pay, under-pay, or minting found.</td></tr>
+                  <tr><td>R2·03</td><td>Manipulating or stealing cards with degenerate / wrong decryption keys</td><td>Had a participant use a degenerate encryption exponent, or deliberately send a wrong decryption key at reveal.</td><td><span class="fp-pill held">held under testing</span>At worst a card fails to decrypt and the hand voids; an attacker cannot flip a card to a chosen value or peek at it.</td></tr>
+                  <tr><td>R2·04</td><td>Cross-hand / cross-round replay to corrupt a new hand</td><td>Replayed a previous hand's dealing / decryption events into a new hand.</td><td><span class="fp-pill held">held under testing</span>Events are scoped by round number and bound to signature / table id / session nonce, so cross-round replay does nothing.</td></tr>
+                  <tr><td>R2·05</td><td>Reconnect-replay to steal another player's hole cards</td><td>Reconnected with a forged sinceSeq / peerId to try to pull private events addressed to others.</td><td><span class="fp-pill held">held under testing</span>The relay filters private events by recipient, and private events are end-to-end sealed anyway — even if pulled they cannot be opened.</td></tr>
+                  <tr><td>R2·06</td><td>Relay equivocation (different events to different players) to split state</td><td>Simulated the relay delivering different event subsets to different players.</td><td><span class="fp-pill held">held under testing</span>Each browser recomputes independently and divergence is detectable via consensus; this falls within the known "connectivity control" boundary and yields no propagating theft.</td></tr>
+                  <tr><td>R2·07</td><td>Changing settings mid-game / no "host" authority at round start</td><td>Any player emitting updateSettings / newRound to manipulate blind positions or seating order.</td><td><span class="fp-pill inherent">disclosed · to harden</span>There is currently no host-authority check; it does not affect dealing fairness or chip conservation, and is on the state-rework roadmap.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="fp-callout">
+              <p><strong>Round 2 takeaway:</strong> the deeper you dig, the more the foundation shows — of seven trickier vectors this round, only one actually broke through (and it is fixed and closed), while the rest were either blocked by existing design or fall within an openly-acknowledged connectivity boundary. We keep the same rule: publish the ones that broke and the ones that held.</p>
+            </div>
+          </section>
+
+          <section id="redteam-round-3-en" style="margin-top:34px">
+            <span class="fp-eyebrow">Red-team · Round 3</span>
+            <h3>Round 3 — simulated-attack log</h3>
+            <p>Round 3 switched to direct console injection against the real compiled scorekeeper and the real crypto library — no client changes, just one console line — targeting the money-moving authorization layer and the dealing cryptography. We did break through 4 real holes (any player, one line, no client patch, could dodge a loss / destroy chips / steal a whole pot / see the whole table), and fixed each with a reproducible PoC. Two more items are by-design behavior (relay ordering boundary, one-person-multi-seat on friendly tables), disclosed as usual.</p>
+            <div class="fp-statrow">
+              <div class="fp-stat"><b>6</b><span>deep attack vectors</span></div>
+              <div class="fp-stat"><b class="gold">4</b><span>truly broke · fixed &amp; closed</span></div>
+              <div class="fp-stat"><b class="em">2</b><span>by design · disclosed</span></div>
+              <div class="fp-stat"><b>0</b><span>unfixed real holes</span></div>
+            </div>
+            <div class="fp-table-wrap">
+              <table class="fp-log">
+                <thead><tr><th>ID</th><th>Simulated attack</th><th>How we tested it</th><th>Result &amp; status</th></tr></thead>
+                <tbody>
+                  <tr><td>R3·01</td><td>Playing dead / forging a "table closed" signal to dodge a losing hand and get refunded</td><td>Injected a bare hand/result into the scorekeeper to void a live hand and claw back committed chips.</td><td><span class="fp-pill fixed">fixed &amp; closed</span>The scorekeeper no longer treats a bare hand/result as a void — refunds require the unanimous signed consent of seated players, or objective disconnect evidence (cannotContinue). PoC included.</td></tr>
+                  <tr><td>R3·02</td><td>Destroying pot chips via "restart" / seating a duplicate of yourself mid-hand</td><td>Injected newRound mid-hand (reset / overwrite round number / seat two copies of myself).</td><td><span class="fp-pill fixed">fixed &amp; closed</span>Same round number is idempotent, no new hand before settlement, the seat list is deduped and requires ≥2 players. Chips can no longer be destroyed; PoC included.</td></tr>
+                  <tr><td>R3·03</td><td>Shout "your opponent timed out" to fold any opponent and steal the pot</td><td>Injected autoFold against a non-turn opponent, and the "pass the turn then instantly time them out" steal.</td><td><span class="fp-pill fixed">fixed &amp; closed</span>The relay stamps a trusted server receive-timestamp; the scorekeeper folds only when the target is the actual turn owner AND the timestamp shows the timeout truly elapsed. Both steals are blocked; real timeouts still work. PoC included.</td></tr>
+                  <tr><td>R3·04</td><td>First shuffler ships a weak / synthetic / smooth modulus to read the whole table with zero keys</td><td>Had the first shuffler broadcast a trivially-openable modulus (e.g. {p:15,q:21}, a large composite, or a "smooth" prime).</td><td><span class="fp-pill fixed">fixed &amp; closed</span>On receipt every prime is checked: ≥1024-bit, Miller–Rabin primality, and p−1 carries a verifiable large prime factor (anti-Pohlig–Hellman); the generator now produces such primes. Weak / composite / smooth moduli are rejected; PoC included.</td></tr>
+                  <tr><td>R3·05</td><td>Relay reorders messages to change winners</td><td>Simulated the relay delivering the same signed events in different orders to change chip ownership.</td><td><span class="fp-pill inherent">by design · disclosed</span>Each browser recomputes independently and divergence is detectable by consensus — the openly-acknowledged connectivity boundary; kept by design this round.</td></tr>
+                  <tr><td>R3·06</td><td>One person wears several masks at one table</td><td>One account occupying multiple seats at the same table.</td><td><span class="fp-pill inherent">by design · disclosed</span>Play-money friendly tables allow it by design, constrained by reconciliation / alerts; it does not affect dealing fairness or chip conservation.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="fp-callout">
+              <p><strong>Round 3 takeaway:</strong> we went straight at the money-moving scorekeeper and the dealing cryptography, and it surfaced 4 real holes (dodge / destroy / steal-pot / peek), each now fixed with a reproducible PoC; the other 2 are openly-acknowledged by-design boundaries.</p>
+            </div>
+          </section>
+
+          <section id="redteam-round-4-en" style="margin-top:34px">
+            <span class="fp-eyebrow">Red-team · Round 4</span>
+            <h3>Round 4 — simulated-attack log</h3>
+            <p>Round 4 did two things: (1) re-ran all 23 items from Rounds 1–3 <strong>after a large amount of code had changed</strong>, to confirm no old hole had come back to life; and (2) dug deeper with a harsher attacker view. The audit pass recorded 2 real break-throughs with a fix each; we then closed what could be closed: <strong>R4·01 (relay timestamp) is fixed &amp; closed</strong> — auto-fold is now self-authorized and no longer trusts the relay clock at all (598 tests green, attack PoC re-run). <strong>R4·08 (all-in disconnect dodge)</strong>, on deeper analysis, is an inherent trade-off of decentralized poker without a trusted server or zero-knowledge proofs — the obvious quick fixes each fail (see that row) — so it is disclosed honestly and put on the roadmap for a zero-knowledge verifiable deal, while the current, operator-safest "refund" behavior is kept. The subsequent <strong>full re-audit</strong> surfaced 2 more real issues and <strong>fixed them on the spot</strong>: R4·11 (the Heart-Ace leaking because it encoded to "1") and R4·12 (the self-verification tool being out of sync with the encoding and mis-decoding cards) — both fixed and re-verified.</p>
+            <div class="fp-statrow">
+              <div class="fp-stat"><b>12</b><span>deep + regression vectors</span></div>
+              <div class="fp-stat"><b class="gold">4</b><span>truly broke (3 fixed · 1 to root-fix)</span></div>
+              <div class="fp-stat"><b class="em">7</b><span>held under testing</span></div>
+              <div class="fp-stat"><b>1</b><span>by design · disclosed</span></div>
+            </div>
+            <div class="fp-table-wrap">
+              <table class="fp-log">
+                <thead><tr><th>ID</th><th>Simulated attack</th><th>How we tested it</th><th>Result &amp; status</th></tr></thead>
+                <tbody>
+                  <tr><td>R4·01</td><td>The operator/relay forges a "timeout clock" to force-fold an opponent and take the disputed pot</td><td>Ran the real scorekeeper on one forged auto-fold with an honest server receive-timestamp vs. a relay-chosen one.</td><td><span class="fp-pill fixed">fixed &amp; closed</span>The earlier "claim a timeout" defense trusted the relay's timestamp, which is not signed and not in the hand fingerprint, so a relay colluding with a seat could forge it to fold an on-turn opponent. <strong>Fixed</strong>: an auto-fold is now self-authorized — a player is folded only by THEIR OWN client (a self-fold) or when they are genuinely unreachable; the scorekeeper no longer uses the relay timestamp to judge a timeout. A relay forging the timestamp can no longer fold a present opponent (it lacks that player's signing key). Real timeouts still self-fold and a disconnected player can still be folded so the table never freezes; 598 tests green with the attack PoC re-run (the forged timestamp is now inert).</td></tr>
+                  <tr><td>R4·02</td><td>Void mid-hand to dodge a loss and get refunded (E-1 regression)</td><td>Injected a bare "table closed" signal, a lone void vote, and a connected "cannot continue".</td><td><span class="fp-pill held">held under testing</span>Refunds require unanimous signed consent of seated players or objective disconnect evidence; a connected dodge is treated as a fold and the loss stands.</td></tr>
+                  <tr><td>R4·03</td><td>Destroy pot chips via "restart" / seat a duplicate of yourself (E-2 regression)</td><td>Restart mid-hand, seat two copies of myself, overwrite an existing round number.</td><td><span class="fp-pill held">held under testing</span>Same round number is idempotent, no new hand before settlement, seats deduped and ≥2 enforced — chips are not destroyed.</td></tr>
+                  <tr><td>R4·04</td><td>First shuffler ships a weak / composite / smooth modulus to peek at the whole table with zero keys</td><td>Fed the real validator {15,21}, a large composite, a "smooth" prime (p−1 all small factors), and equal primes.</td><td><span class="fp-pill held">held under testing</span>All rejected — including a genuine 1024-bit+ prime rejected purely for a weak structure; an honestly-generated modulus passes, so play is unaffected.</td></tr>
+                  <tr><td>R4·05</td><td>A flood of garbage actions tries to mint / destroy chips</td><td>8000 random + malformed + adversarial logs (negative bets, huge bets, fractions, junk identities, out-of-range rounds, duplicate rosters) into the real scorekeeper.</td><td><span class="fp-pill held">held under testing</span>Chip conservation is airtight: zero minting, zero destruction, zero negatives, zero crashes.</td></tr>
+                  <tr><td>R4·06</td><td>Intercept / redirect another player's hole-card decryption key</td><td>Intercepted the sealed key and tried to open it as a different card position / round / sender.</td><td><span class="fp-pill held">held under testing</span>Keys are end-to-end sealed to the recipient and bound to card position / round / sender; redirecting to a different person, position, or round all fail, and a tampered envelope is rejected.</td></tr>
+                  <tr><td>R4·07</td><td>Kick a player / seat a system phantom / reorder messages to change winners</td><td>Cross-account claim of someone's identity, the "system relay" sneaking into the roster, and one event set in several delivery orders.</td><td><span class="fp-pill held">held (disclosed connectivity boundary)</span>Cross-account identity claims are refused and the system phantom cannot be seated; reordering delivery does change a mid-stream result, but chips stay strictly conserved and divergence is detectable via the record fingerprint — the openly-acknowledged connectivity boundary.</td></tr>
+                  <tr><td>R4·08</td><td>Disconnect after going all-in to dodge a losing hand and reclaim your stake</td><td>Real scorekeeper: after both shove all-in, the side about to lose goes offline and withholds its board keys.</td><td><span class="fp-pill open">disclosed · root-fix via ZK</span>After an all-in only the board reveal remains. A losing player who disconnects and withholds its decryption keys leaves the board unrevealable → the table is voided and refunded. It is not theft (both get their stake back), but it converts a likely loss into a guaranteed refund — repeatedly used, an edge over honest opponents. The connected dodge is still blocked; only genuine disconnect remains. On deeper analysis the obvious fixes each backfire: (1) "escrow all board keys at all-in" — an honest client already does this (so genuine disconnects resolve normally), but it <strong>cannot stop a tampered client that simply refuses to publish its keys</strong>; (2) "forfeit a disconnected player" removes the dodge but <strong>hands the operator a new attack surface</strong> — the connectivity-controlling operator could cut a victim's link before its keys broadcast to force a loss, breaching the "connectivity only" boundary. The real fix is a <strong>zero-knowledge verifiable deal</strong> (the board is recoverable from public commitments with no later cooperation), which is on the roadmap. The current operator-safest "refund" behavior is kept, with account-level detection of repeated disconnect-dodging.</td></tr>
+                  <tr><td>R4·09</td><td>Forge / alter another player's signed actions, replay across tables</td><td>After a real signature, tampered the bet amount, impersonated, moved across tables, changed the session nonce.</td><td><span class="fp-pill held">held under testing</span>The signature covers the whole envelope, so any edit invalidates it; another player's private-key signature cannot be produced; cross-table / cross-session replay is rejected by the bindings.</td></tr>
+                  <tr><td>R4·10</td><td>Open someone else's vault / account</td><td>Real crypto: open the vault with a wrong password, another account's password, and the login credential the server stores.</td><td><span class="fp-pill held">held under testing</span>The vault is encrypted locally with the password and domain-separated from the server login credential; a wrong password, another's password, and the server-stored credential all fail, and DB queries are fully parameterized (no injection). (Three depth-hardening items remain — login rate-limiting, session rotation, constant-time comparison — none of which let anyone cheat.)</td></tr>
+                  <tr><td>R4·11</td><td>Identifying one specific card in the encrypted deck with zero keys (Heart-Ace fixed point)</td><td>Encrypted the whole deck with the real encoding + a real modulus and scanned the public ciphertexts for any that are trivially identifiable.</td><td><span class="fp-pill fixed">fixed &amp; closed</span>The old encoding mapped the Heart-Ace to the number 1, and 1 is a multiplicative fixed point (1^e = 1 under every key), so its ciphertext was always "1" — identifiable in the public deck with zero keys, along with its position (the other 51 cards were safe). <strong>Fixed</strong>: the card encoding is now (index+1)^2 (values 4–2809), still a perfect square (preserving the zero residue-leak property) but off the 0/1 fixed points — no ciphertext is trivially identifiable anymore. Ships with a PoC (Heart-Ace no longer leaks) and a green test pass.</td></tr>
+                  <tr><td>R4·12</td><td>The "verify-it-yourself" tool mis-decodes cards</td><td>Fed the client's real card encoding to the standalone verifier's decode logic, card by card.</td><td><span class="fp-pill fixed">fixed &amp; closed</span>The standalone verifier's card decode still expected the old 1..52 numbering and was out of sync with the squared encoding — it decoded only 1 of 52 cards correctly, mis-decoding or throwing on the rest (signature / deck-integrity / record-fingerprint checks that don't decode cards were unaffected). <strong>Fixed</strong>: both verifier scripts now take the square root to recover the index before decoding, matching the new encoding; all 52 cards now decode correctly, restoring the self-verification chain.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="fp-callout">
+              <p><strong>Round 4 takeaway:</strong> re-running all 23 earlier items confirmed no old hole came back after heavy code changes, and the foundation (signatures / sealed hole cards / winners from truly-decrypted cards / accounts / chip conservation) still holds — 7 deep vectors held. We also honestly surfaced <strong>2 real holes</strong>: the operator-layer R4·01 (relay timestamp beyond "connectivity only") is <strong>fixed &amp; closed</strong> — auto-fold is now self-authorized and never trusts the relay clock; the player-layer R4·08 (all-in disconnect dodge) is an inherent trade-off where quick fixes backfire (see that row), so it is disclosed and left for a zero-knowledge verifiable deal, with the operator-safest refund kept for now. Publish the ones that broke and the ones that held, fix what can be rooted out, and plainly explain what can't be had both ways — as always.</p>
+            </div>
+
+            <section id="redteam-round-4-full-en" style="margin-top:34px">
+              <span class="fp-eyebrow">Full re-audit</span>
+              <h3>All 23 earlier attacks re-run + 8 new vectors</h3>
+              <p>Not just re-checking conclusions — we re-ran all 23 attacks from Rounds 1–3 against the current code, <strong>each one with real code</strong> (across signatures, dealing crypto, the money-moving scorekeeper, the relay, and accounts), and added 8 new angles. Apart from R4·01 (fixed) and R4·08 (disclosed) above, <strong>every one held under testing</strong> and no old hole came back.</p>
+              <div class="fp-statrow">
+                <div class="fp-stat"><b>31</b><span>items re-audited</span></div>
+                <div class="fp-stat"><b class="em">26</b><span>held under testing</span></div>
+                <div class="fp-stat"><b class="gold">1</b><span>fixed &amp; closed</span></div>
+                <div class="fp-stat"><b>4</b><span>by design · disclosed</span></div>
+              </div>
+              <div class="fp-table-wrap">
+                <table class="fp-log">
+                  <thead><tr><th>ID</th><th>Simulated attack</th><th>Re-run result on current code</th></tr></thead>
+                  <tbody>
+                    <tr><td>R1·01</td><td>Inferring hidden cards from public params (residue leak)</td><td><span class="fp-pill held">held</span>Legendre over a real modulus: all 52 share one fingerprint, 0 bits</td></tr>
+                    <tr><td>R1·02</td><td>Cracking weak key sizes</td><td><span class="fp-pill held">held</span>Floor 1024-bit primes (2048-bit modulus), capped</td></tr>
+                    <tr><td>R1·03</td><td>Operator man-in-the-middle to steal hole cards</td><td><span class="fp-pill held">held</span>No per-card key → no hole card (random/non-square all fail)</td></tr>
+                    <tr><td>R1·04</td><td>Rigged deck with duplicate cards</td><td><span class="fp-pill held">held</span>Real audit flags duplicate ciphertext on the spot</td></tr>
+                    <tr><td>R1·05</td><td>Forging/altering another's signed actions</td><td><span class="fp-pill held">held</span>Real ECDSA: tamper/impersonate/cross-table replay all rejected</td></tr>
+                    <tr><td>R1·06</td><td>Illegal bets (over-stack / out-of-turn / negative)</td><td><span class="fp-pill held">held</span>Non-negative safe integer, not over own stack</td></tr>
+                    <tr><td>R1·07</td><td>Relay acting as referee for turn/seat order</td><td><span class="fp-pill held">held</span>Seats/turns/winner derived by the browser from the signed log</td></tr>
+                    <tr><td>R1·08</td><td>Unilateral void to dodge a loss</td><td><span class="fp-pill held">held</span>Refund needs unanimous signed consent or objective disconnect</td></tr>
+                    <tr><td>R1·09</td><td>Collusion / multi-accounting / telling cards</td><td><span class="fp-pill inherent">inherent · detection only</span>Crypto can't kill off-table collusion; we surface signals</td></tr>
+                    <tr><td>R1·10</td><td>Giant parameters to freeze the table</td><td><span class="fp-pill held">held</span>Bit size clamped to [1024, 2048]</td></tr>
+                    <tr><td>R2·01</td><td>Player kicking another (hijacking an id)</td><td><span class="fp-pill held">held</span>Relay refuses a cross-account claim of an id (409)</td></tr>
+                    <tr><td>R2·02</td><td>Side-pot / all-in mis-allocation or minting</td><td><span class="fp-pill held">held</span>Short stack capped, strictly conserved, ties split (real allocator)</td></tr>
+                    <tr><td>R2·03</td><td>Degenerate / wrong decryption keys</td><td><span class="fp-pill held">held</span>Wrong key can't flip to a chosen value; yields an invalid card → void</td></tr>
+                    <tr><td>R2·04</td><td>Cross-hand / cross-round replay</td><td><span class="fp-pill held">held</span>Events scoped by round; stale events can't touch the live hand</td></tr>
+                    <tr><td>R2·05</td><td>Reconnect-replay to steal hole cards</td><td><span class="fp-pill held">held</span>Private events filtered by recipient and end-to-end sealed</td></tr>
+                    <tr><td>R2·06</td><td>Relay equivocation splits state</td><td><span class="fp-pill inherent">by design · disclosed</span>Each browser recomputes; divergence is consensus-detectable</td></tr>
+                    <tr><td>R2·07</td><td>Changing settings mid-game / no host authority</td><td><span class="fp-pill held">held</span>updateSettings moves no chips in the scorekeeper</td></tr>
+                    <tr><td>R3·01</td><td>Playing dead / forged "closed" to dodge + refund</td><td><span class="fp-pill held">held</span>A bare closed signal does not refund (same as R1·08)</td></tr>
+                    <tr><td>R3·02</td><td>Restart to destroy chips / seat a duplicate self</td><td><span class="fp-pill held">held</span>Same round idempotent, deduped, no new hand before settlement</td></tr>
+                    <tr><td>R3·03</td><td>"Opponent timed out" to fold them and steal</td><td><span class="fp-pill fixed">fixed &amp; closed</span>Now self-authorized (see R4·01); never trusts the relay clock</td></tr>
+                    <tr><td>R3·04</td><td>Weak/smooth modulus to peek with zero keys</td><td><span class="fp-pill held">held</span>Weak/composite/smooth/equal moduli all rejected (see R4·04)</td></tr>
+                    <tr><td>R3·05</td><td>Relay reorders messages to change winners</td><td><span class="fp-pill inherent">by design · disclosed</span>Reorder can shift mid-stream but chips stay conserved &amp; auditable</td></tr>
+                    <tr><td>R3·06</td><td>One person, many masks at one table</td><td><span class="fp-pill inherent">by design · disclosed</span>Play-money tables allow it; reconciliation/alerts</td></tr>
+                    <tr><td>N1</td><td>Tie / split pot (incl. odd chip)</td><td><span class="fp-pill held">held</span>Split conserves; the odd chip is fully accounted</td></tr>
+                    <tr><td>N2</td><td>Event schema fuzz (malformed deck / huge ints / __proto__)</td><td><span class="fp-pill held">held</span>Malformed rejected, valid accepted, no prototype pollution</td></tr>
+                    <tr><td>N3</td><td>Transcript hash-chain tamper (add/del/edit/reorder)</td><td><span class="fp-pill held">held</span>Real verifier catches edit/delete/reorder/duplicate-insert</td></tr>
+                    <tr><td>N4</td><td>Record-fingerprint determinism / pollution</td><td><span class="fp-pill held">held</span>Key-order independent, NaN/Infinity rejected, no pollution</td></tr>
+                    <tr><td>N5</td><td>Rebuy farming</td><td><span class="fp-pill held">held</span>Rebuy counts as buy-in; net P&amp;L stays negative, conserved</td></tr>
+                    <tr><td>N6</td><td>sitOut/return to manipulate turns or dodge blinds</td><td><span class="fp-pill held">held</span>A committed blind can't be reclaimed; folded, conserved</td></tr>
+                    <tr><td>N7</td><td>Void vote / cannotContinue from a non-seated player</td><td><span class="fp-pill held">held</span>Scorekeeper checks the seat list; outsiders ignored, no refund</td></tr>
+                    <tr><td>N8</td><td>Claiming another player's hole card (offset/recipient)</td><td><span class="fp-pill held">held</span>Keys bound to recipient/position/round/sender; redirects rejected (see R4·06)</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+        </section>
+
+        <h2>A four-light fairness audit on every hand</h2>
+        <p>At the end of every hand the browser automatically runs four checks and reports them in an overlay: <strong>① deck integrity</strong> (52 unique, no duplicates) · <strong>② all players shuffled and locked</strong> · <strong>③ matching record fingerprint</strong> (downloadable canonicalHandHash for cross-player comparison) · <strong>④ signatures complete</strong>. A pass stamps "verified"; a warn lights red and offers the evidence for download. This is an active alert layer on top of passive evidence — you don't have to grep the transcript yourself to notice an anomaly.</p>
+
         <h2>Recommendations</h2>
         <ul class="fp-tips">
           <li>Only enter tables from <code>fairpoker.app</code> or an IPFS CID published by the official site.</li>
           <li>For important games, prefer a registered account with a strong password, and avoid playing in a browser with suspicious extensions.</li>
+          <li>Watch for the four-light fairness audit overlay at the end of each hand; any red light can be exported as evidence from the table's security panel.</li>
           <li>After downloading a transcript, verify it yourself locally with the <a href="./verify-guide.html">verification guide</a>.</li>
         </ul>
       </div>
@@ -166,14 +545,15 @@
     <footer class="fp-foot">
       <div class="fp-foot-links">
         <a href="https://fairpoker.app/"><span data-l="zh">首页</span><span data-l="en">Home</span></a>
-        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">公平证据</span><span data-l="en">Evidence</span></a>
-        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">复验教程</span><span data-l="en">Verify</span></a>
-        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全</span><span data-l="en">Security</span></a>
+        <a href="https://fairpoker.app/audit-report.html"><span data-l="zh">透明度报告</span><span data-l="en">Transparency</span></a>
+        <a href="https://fairpoker.app/verify-guide.html"><span data-l="zh">独立验证</span><span data-l="en">Verification</span></a>
+        <a href="https://fairpoker.app/security.html"><span data-l="zh">安全白皮书</span><span data-l="en">Security Whitepaper</span></a>
         <a href="https://fairpoker.app/roadmap.html"><span data-l="zh">路线图</span><span data-l="en">Roadmap</span></a>
         <a href="https://fairpoker.app/privacy.html"><span data-l="zh">隐私</span><span data-l="en">Privacy</span></a>
         <a href="https://fairpoker.app/terms.html"><span data-l="zh">条款</span><span data-l="en">Terms</span></a>
         <a href="https://fairpoker.app/cookies.html">Cookie</a>
         <a href="https://fairpoker.app/responsible-play.html"><span data-l="zh">负责任游戏</span><span data-l="en">Responsible play</span></a>
+        <a href="https://github.com/FairpokerApp/fairpoker-core-audit" target="_blank" rel="noopener"><span data-l="zh">开源代码</span><span data-l="en">Source code</span></a>
         <a href="mailto:support@fairpoker.app">support@fairpoker.app</a>
       </div>
       <div><span data-l="zh">仅娱乐筹码 · 非真钱赌博</span><span data-l="en">Play chips only &middot; no real-money gambling</span></div>
@@ -203,5 +583,14 @@
       })();
     </script>
     <script src="./release-identity-loader.js" defer></script>
-  </body>
+  
+    <script>
+      (function(){
+        var el=document.documentElement;
+        function applyTitle(){var l=el.getAttribute('data-lang')||'zh';var t=el.getAttribute('data-title-'+l)||el.getAttribute('data-title-zh');if(t)document.title=t;}
+        applyTitle();
+        try{new MutationObserver(applyTitle).observe(el,{attributes:true,attributeFilter:['data-lang']});}catch(e){}
+      })();
+    </script>
+</body>
 </html>

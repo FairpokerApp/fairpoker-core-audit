@@ -15,6 +15,7 @@ import {useGameAudio} from "../lib/useGameAudio";
 import FloatingInviteButton from "./FloatingInviteButton";
 import SecurityStatusBar from "./SecurityStatusBar";
 import AccountHomeButton from "./AccountHomeButton";
+import ReportButton from "./ReportButton";
 import PlayerAvatar from "./PlayerAvatar";
 import {useI18n} from "../lib/i18n";
 import {HostId, TableId} from "../lib/setup";
@@ -30,6 +31,7 @@ import {
 } from "../lib/useWorkerRoomState";
 import {WorkerRoomPlayerState} from "../lib/CloudflareRelayTransport";
 import {useEncryptedShuffleStatus} from "../lib/useEncryptedShuffleStatus";
+import {warmUpFirstShufflerPlayer} from "../lib/MentalPokerGameRoom";
 import {buildCreateTableUrl, upsertJoinedTable} from "../lib/tableLobby";
 import {MAX_SEATS} from "../lib/texas-holdem/texasHoldemReducer";
 
@@ -350,6 +352,20 @@ export default function TexasHoldemGameTable() {
 
   const eventLogs = useEventLogs();
   const encryptedShuffleStatus = useEncryptedShuffleStatus();
+
+  // 预洗牌：牌局空闲时在后台预生成"下一手首洗者"要用的加密密钥，等真正开下一手时几乎瞬间
+  // 就能发牌，玩家感觉不到洗牌延迟。首次进桌先预热一份（覆盖第一手），之后每手发牌后再补一份。
+  // 纯后台性能优化，失败会自动丢弃、不影响牌局；测试环境跳过以免拖慢单测。
+  const shuffleBits = roundSettings?.bits;
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'test') {
+      return;
+    }
+    // 首手进桌略等页面稳定再预热；后续每手发牌后等牌桌进入"思考"空闲期再补，避开发牌高峰。
+    const delayMs = round ? 3000 : 800;
+    const timer = window.setTimeout(() => warmUpFirstShufflerPlayer(shuffleBits), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [round, shuffleBits]);
   const audio = useGameAudio();
   const spokenActionIds = useRef<Set<string>>(new Set());
   const continueAfterPlannedHands = false;
@@ -395,9 +411,13 @@ export default function TexasHoldemGameTable() {
   );
   const shouldShowRegistrationLobbyCards = !matchRegistrationOpen;
   const showHandPausePanel = Boolean(handPause && !effectiveCurrentRoundFinished);
-  // A voided hand means a player left for good and the deck can't be decrypted —
-  // the table is over. Everyone sees a clear notice and starts a fresh room.
-  const tableEnded = lastWinningResult?.how === 'Voided';
+  // A voided hand WITH missing players means someone left for good and the deck can't be
+  // decrypted — the table is over; everyone sees a clear notice and starts a fresh room.
+  // A void with NO missing players is a deal-phase void (a mid-shuffle refresh interrupted
+  // the encrypted shuffle): nobody actually left, the blinds were refunded, and the table
+  // simply re-deals the next hand — so it must NOT be treated as "ended".
+  const tableEnded = lastWinningResult?.how === 'Voided'
+    && (((lastWinningResult as { missingPlayers?: string[] }).missingPlayers?.length ?? 0) > 0);
   const showMessageBar = Boolean(playerId && (round || workerRoomState) && !matchRegistrationOpen);
   const isTableHost = Boolean(playerId && (!HostId || HostId === playerId));
   const workerMyConnectionStatus = workerConnectionStatus(myWorkerPlayerState);
@@ -846,6 +866,7 @@ export default function TexasHoldemGameTable() {
           audio={audio}
         />
         <FloatingInviteButton playerId={playerId} />
+        <ReportButton roomId={TableId} playerId={playerId ?? ''} members={members} names={names} />
         <GameAudioToggle audio={audio} />
         <AccountHomeButton />
       </div>
@@ -952,6 +973,7 @@ export default function TexasHoldemGameTable() {
           mainPotWinners={mainPotWinners}
           lastWinningResult={lastWinningResult}
           scoreBoard={handScoreBoard}
+          totalScoreBoard={scoreBoard}
           currentRoundFinished={canonicalCurrentRoundFinished}
           actionsDone={actionsDone}
           autoFoldTimeoutSeconds={roundSettings?.autoFoldTimeoutSeconds}
@@ -974,6 +996,7 @@ export default function TexasHoldemGameTable() {
           mainPotWinners={mainPotWinners}
           lastWinningResult={lastWinningResult}
           scoreBoard={handScoreBoard}
+          totalScoreBoard={scoreBoard}
           currentRoundFinished={canonicalCurrentRoundFinished}
           actionsDone={null}
           autoFoldTimeoutSeconds={roundSettings?.autoFoldTimeoutSeconds}
@@ -1023,6 +1046,7 @@ export default function TexasHoldemGameTable() {
           mainPotWinners={mainPotWinners}
           lastWinningResult={lastWinningResult}
           scoreDelta={playerId ? handScoreBoard.get(playerId) : undefined}
+          netTotal={playerId ? scoreBoard.get(playerId) : undefined}
           currentRoundFinished={canonicalCurrentRoundFinished}
           isRejoinBlocked={seatLost}
           connectionStatus={myConnectionStatus}
@@ -1039,6 +1063,7 @@ export default function TexasHoldemGameTable() {
           eventLogs={eventLogs}
           messages={messages}
           onMessage={sendMessage} /> }
+      <div className="fairpoker-nogamble-note">{t('gameNoGambleNote')}</div>
     </div>
   );
 }

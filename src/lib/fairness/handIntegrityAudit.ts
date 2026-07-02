@@ -102,6 +102,7 @@ function auditFullShuffle(
   publicPayloads: DealingPayload[],
   round: number,
   participants: string[] | undefined,
+  voided?: boolean,
 ): IntegrityCheck {
   if (!participants || participants.length === 0) {
     return {id: 'fullShuffle', status: 'pending', metrics: {participants: 0}};
@@ -130,6 +131,13 @@ function auditFullShuffle(
     return {id: 'fullShuffle', status: 'pending', metrics};
   }
   if (missingShuffle.length > 0 || missingLock.length > 0) {
+    // A VOIDED hand legitimately never finished its shuffle (e.g. a mid-shuffle refresh
+    // interrupted it and the deal-phase watchdog refunded the blinds), so an incomplete
+    // shuffle here is expected — not evidence of cheating. Report it as not-evaluated rather
+    // than a warning, so a void never surfaces a false "a player skipped the shuffle" alarm.
+    if (voided) {
+      return {id: 'fullShuffle', status: 'pending', metrics, reasonCode: 'voided-hand'};
+    }
     return {id: 'fullShuffle', status: 'warn', metrics, reasonCode: 'incomplete-shuffle'};
   }
   return {id: 'fullShuffle', status: 'pass', metrics};
@@ -200,8 +208,12 @@ export async function auditHandIntegrity(input: {
   round: number;
   participants?: string[];
   peerReceipts?: Array<{signer: string; handHash: string}>;
+  // True when the hand was VOIDED (refunded). A void — e.g. a mid-shuffle refresh that the
+  // deal-phase watchdog refunded — legitimately leaves the shuffle incomplete, so the
+  // "everyone shuffled" check must not raise a false cheating alarm on it.
+  voided?: boolean;
 }): Promise<HandIntegrityResult> {
-  const {entries, round, participants, peerReceipts = []} = input;
+  const {entries, round, participants, peerReceipts = [], voided = false} = input;
   const publicEntriesAll = entries.filter((entry) => entry.scope === 'public');
   const publicPayloads = publicEntriesAll
     .map((entry) => payloadOf(entry.wireEvent))
@@ -211,7 +223,7 @@ export async function auditHandIntegrity(input: {
 
   const checks: IntegrityCheck[] = [
     auditDeckIntegrity(publicPayloads, round),
-    auditFullShuffle(publicPayloads, round, participants),
+    auditFullShuffle(publicPayloads, round, participants, voided),
     auditRecordConsensus(handHash, peerReceipts, round),
     auditSignatures(publicEntriesForRound(entries, round)),
   ];
